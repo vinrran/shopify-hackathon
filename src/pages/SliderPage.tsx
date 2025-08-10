@@ -5,7 +5,7 @@ export function SliderPage() {
     'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
     'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
     'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
+    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
   ]
 
   return (
