@@ -35,13 +35,6 @@ router.post('/build', async (req, res) => {
       formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
     }
     
-    // Get today's queries
-    const todayQueries = await db.all(
-      `SELECT query FROM search_queries 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
-    
     // Get past N days of responses and queries
     const pastDate = new Date(response_date);
     pastDate.setDate(pastDate.getDate() - past_days);
@@ -111,10 +104,10 @@ router.post('/build', async (req, res) => {
       queries: pastQueries.map(q => q.query)
     };
     
-    // Get ranking from Fal.ai
+    // Get ranking from Fal.ai using user inputs and vision data
     const rankedProducts = await rankProducts({
       todayResponses: formattedTodayResponses,
-      todayQueries: todayQueries.map(q => q.query),
+      todayQueries: [], // No longer used - ranking uses user inputs + vision data directly
       pastDays: pastDaysData,
       products: formattedProducts
     });

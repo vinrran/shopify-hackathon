@@ -84,4 +84,85 @@ router.post('/run', async (req, res) => {
   }
 });
 
+// POST /api/vision/process - Process specific products with vision AI
+router.post('/process', async (req, res) => {
+  try {
+    const { user_id, response_date, products } = req.body;
+    
+    if (!user_id || !response_date || !Array.isArray(products)) {
+      return res.status(400).json({ 
+        ok: false, 
+        error: 'Missing required fields' 
+      });
+    }
+    
+    const db = getDb();
+    
+    // First, collect all unprocessed products
+    const unprocessedProducts = [];
+    for (const product of products) {
+      if (!product.product_id || !product.image_url) continue;
+      
+      // Check if already processed
+      const existing = await db.get(
+        `SELECT id FROM product_vision_data 
+         WHERE user_id = ? AND response_date = ? AND product_id = ?`,
+        [user_id, response_date, product.product_id]
+      );
+      
+      if (!existing) {
+        unprocessedProducts.push(product);
+      }
+    }
+    
+    if (unprocessedProducts.length === 0) {
+      return res.json({ processed: 0 });
+    }
+    
+    // Process ALL images in parallel with high concurrency
+    const { processImagesVisionBatch } = await import('../services/falService.js');
+    const imageUrls = unprocessedProducts.map(p => p.image_url);
+    const maxConcurrency = Math.min(20, unprocessedProducts.length); // Process up to 20 images at once
+    
+    logger.info(`Processing ${imageUrls.length} images in parallel with concurrency ${maxConcurrency}`);
+    const visionResults = await processImagesVisionBatch(imageUrls, maxConcurrency);
+    
+    // Store all results in batch
+    let processed = 0;
+    for (let i = 0; i < unprocessedProducts.length; i++) {
+      const product = unprocessedProducts[i];
+      const visionData = visionResults[i];
+      
+      if (visionData) {
+        try {
+          await db.run(
+            `INSERT OR REPLACE INTO product_vision_data 
+             (user_id, response_date, product_id, image_url, caption, tags_json, attributes_json, raw_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              user_id,
+              response_date,
+              product.product_id,
+              product.image_url,
+              visionData.caption || '',
+              JSON.stringify(visionData.tags || []),
+              JSON.stringify(visionData.attributes || {}),
+              visionData.raw_json || '{}'
+            ]
+          );
+          processed++;
+        } catch (error) {
+          logger.error(`Failed to store vision data for product ${product.product_id}:`, error);
+        }
+      }
+    }
+    
+    logger.info(`Processed ${processed} product images with vision AI for user ${user_id}`);
+    res.json({ processed });
+  } catch (error) {
+    logger.error('Vision processing endpoint failed:', error);
+    res.status(500).json({ ok: false, error: 'Vision processing failed' });
+  }
+});
+
 export default router;
