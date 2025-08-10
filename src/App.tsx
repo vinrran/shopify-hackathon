@@ -1,7 +1,9 @@
 import {SliderPage} from './pages'
+import {QuizPage} from './pages/QuizPage'
 import {AboutPage} from './pages/AboutPage'
 import {ProductsPage} from './pages/ProductsPage'
 import {useEffect, useState} from 'react'
+import {AppProvider} from './context/AppContext'
 
 export function App() {
   const [route, setRoute] = useState<string>(() => window.location.hash.slice(1) || 'about')
@@ -20,6 +22,8 @@ export function App() {
         return ProductsPage
       case 'slider':
         return SliderPage
+      case 'quiz':
+        return QuizPage
       default:
         return AboutPage
     }
@@ -31,6 +35,7 @@ export function App() {
         {[
           {to: 'slider', label: 'Slider'},
           {to: 'products', label: 'Products'},
+          {to: 'quiz', label: 'Quiz'},
           {to: 'about', label: 'About'},
         ].map(link => (
           <a
@@ -46,7 +51,13 @@ export function App() {
         ))}
       </nav>
       <main className="flex-1">
-        <Page />
+        {route === 'quiz' ? (
+          <AppProvider>
+            <QuizPage />
+          </AppProvider>
+        ) : (
+          <Page />
+        )}
       </main>
     </div>
   )
