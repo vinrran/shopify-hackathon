@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useApp } from '../context/AppContext'
+import bg from '../components/background.svg'
 
 interface LoadingScreenProps {
   className?: string
@@ -19,7 +20,7 @@ export function LoadingScreen({
   const animationDelays = ['0.7s', '0.6s', '0.5s', '0.4s', '0.3s', '0.2s']
 
   return (
-    <div className={`min-h-screen flex items-center justify-center px-4 py-10 bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)] ${className}`}>
+    <div className={`min-h-screen flex items-center justify-center px-4 py-10 ${className}`}>
       <div className="relative h-[280px] w-[130px] -mt-[30px]">
         {tarotImages.map((imageUrl, index) => (
           <div
@@ -56,7 +57,15 @@ export function CardLoadingPage() {
   }, [dispatch])
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)] flex items-center justify-center">
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      }}
+    >
       <LoadingScreen />
     </div>
   )

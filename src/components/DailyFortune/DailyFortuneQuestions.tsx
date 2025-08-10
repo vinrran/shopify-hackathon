@@ -17,7 +17,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const currentQuestion = localQuestions[currentQuestionIndex]
-  const progress = ((currentQuestionIndex + 1) / localQuestions.length) * 100
+  // Progress bar removed per design; we still show question count
 
   const getCurrentAnswer = () => {
     return answers.find((a) => a.questionId === currentQuestion.id)?.value
@@ -111,20 +111,23 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
       <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200/50 z-10">
         <div className="max-w-md mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Daily Shopping Fortune</h1>
-              <p className="text-sm text-gray-500">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-indigo-600">{Math.round(progress)}%</p>
+            <div className="w-full">
+              <h1
+                className="font-normal"
+                style={{
+                  fontFamily: '"Castoro Titling", serif',
+                  fontSize: 20,
+                  letterSpacing: '0.03em',
+                  textAlign: 'center',
+                  color: '#ffcd61',
+                }}
+              >
+                Daily Shopping Fortune
+              </h1>
+              <p className="text-sm text-gray-500 text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {/* Progress bar removed */}
         </div>
       </div>
 
@@ -170,7 +173,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
               }`}
             >
               {currentQuestionIndex === localQuestions.length - 1 ? (
-                "Get My Fortune ✨"
+                "Get My Fortune"
               ) : (
                 <>
                   Next
