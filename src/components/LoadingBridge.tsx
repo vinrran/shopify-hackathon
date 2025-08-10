@@ -117,6 +117,7 @@ const transformShopifyProduct = (p: any): Product => {
       } else {
         if (merged.length > 0) {
           await api.storeProducts(state.userId, state.today, 'search', merged)
+          // Note: Vision processing moved to after all products are collected
         }
         setPhase('recommended')
       }
@@ -134,6 +135,7 @@ const transformShopifyProduct = (p: any): Product => {
         // cache too, so we can hydrate later
         setAccumulated((prev) => dedupeById([...prev, ...transformed]))
         await api.storeRecommendedProducts(state.userId, state.today, transformed)
+        // Note: Vision processing moved to after all products are collected
       }
     } catch (e) {
       console.error('processRecommendedProducts error:', e)
@@ -149,6 +151,11 @@ const transformShopifyProduct = (p: any): Product => {
     const buildAndFetchRanking = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
+        // Process ALL collected products with vision AI in one batch
+        console.log('Starting comprehensive vision processing for all products...')
+        await api.processProductVision(state.userId, state.today, accumulated)
+        console.log('Vision processing complete for all products')
+        
         await api.buildRanking(state.userId, state.today)
         dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: true } })
         const ranking = await api.getRanking(state.userId, state.today, 20, 0)
@@ -286,17 +293,18 @@ function SearchStep({
   onError: (err: unknown) => void
 }) {
   // As per docs: useProductSearch({ query, first? })
+  // Limit to top 3 products per search for performance
   const {
     products,
     loading,
     error,
     hasNextPage,
     fetchMore,
-  } = useProductSearch({ query, first: 20 })
+  } = useProductSearch({ query, first: 3 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)
-  const MAX_PAGES = 3 // cap for safety
+  const MAX_PAGES = 1 
 
   // Timeout fallback: if nothing arrives within 6s, move on with what we have
   useEffect(() => {
@@ -349,17 +357,18 @@ function RecommendedStep({
   onDone: (products: any[]) => void
   onError: (err: unknown) => void
 }) {
+  // Limit recommended products to match search optimization (3 products)
   const {
     products,
     loading,
     error,
     hasNextPage,
     fetchMore,
-  } = useRecommendedProducts()
+  } = useRecommendedProducts({ first: 6 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)
-  const MAX_PAGES = 2
+  const MAX_PAGES = 1 // Only get first page (3 recommended products)
 
   useEffect(() => {
     if (loading) return
