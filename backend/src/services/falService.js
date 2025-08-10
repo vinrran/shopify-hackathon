@@ -278,30 +278,40 @@ export async function rankProducts({
 
 Scope & neutrality:
 - You are NOT limited to clothing. Treat all product categories equally (apparel, beauty, home, pets, kitchen, electronics accessories, etc.).
-- Do not favor or penalize any category type during scoring.
+- Do not favor or penalize any category during scoring.
 
-Task:
-1) Score EVERY candidate product on a 0–1 scale for relevance using:
+Scoring task:
+1) Score EVERY candidate product on a 0–1 scale using:
    • USER QUIZ RESPONSES (style, preferences, budget, occasions)
    • PRODUCT VISION DATA (image-derived tags/attributes/captions)
-   • PRODUCT METADATA (title, price, vendor, etc.)
+   • PRODUCT METADATA (title, product type, tags, price, vendor)
    • PAST CONTEXT (recent days of user inputs/queries)
-2) Exclude any product IDs provided in "exclude_product_ids".
-3) Select the 20 highest-scoring UNIQUE products.
-4) IMPORTANT: RANDOMIZE the PRESENTATION ORDER of those 20 so similar item types are not grouped. 
-   - After selecting the top 20 by score, shuffle them.
-   - Aim to avoid showing more than two adjacent items of the same category when possible.
-   - Do NOT sort by score or category after shuffling.
+2) Exclude any product IDs in "exclude_product_ids".
+3) Select ALL provided products (typically ~24) and score them.
+
+Presentation order (anti-bunching, diversity-aware shuffle):
+After scoring all products, you MUST reorder them to avoid visible grouping.
+
+A. Derive a coarse_type for each product from product type/title/tags/vision (treat synonyms as the same type; e.g., {hat, cap, beanie} → "hats"; {t-shirt, tee} → "t-shirts"; {sneakers, trainers} → "sneakers", etc.).
+B. Seeded randomness: use a stable seed if provided in the prompt (user/day); otherwise simulate randomness.
+C. Build buckets by coarse_type. Interleave items round-robin across buckets so that:
+   - No two adjacent items share the same coarse_type, when possible.
+   - If a strict alternation is impossible (e.g., heavy majority), minimize runs by swapping to break clusters.
+D. Secondary anti-bunching: when choices exist, also avoid back-to-back duplicates by:
+   - vendor/bra nd,
+   - dominant color/material (from vision tags),
+   - tight price band (e.g., same $±10).
+E. DO NOT re-sort by score after shuffling. The final order must look mixed and non-grouped.
 
 Output policy:
-- Return JSON ONLY: an array of EXACTLY 20 objects in the (shuffled) order.
+- Return JSON ONLY: an array of ALL products provided (typically ~24) in the final (shuffled) order.
 - Each object must be: { "product_id": "string", "score": number (0..1), "reason": "string" }.
-- Keep "reason" concise (≤ 18 words) and grounded in user inputs and visual attributes.
-- No code fences, no prose, no extra fields or metadata.
+- Keep "reason" concise (≤ 18 words) and grounded in the user inputs and visual attributes.
+- No code fences, no prose, no extra fields.
 
 Notes:
-- Selection is driven by score; randomness applies ONLY to the final display order.
-- If multiple items have near-identical scores, still include the most relevant ones and rely on the shuffle for variety.
+- Selection is driven by score; diversity rules apply ONLY to the final display order.
+- If the set is extremely homogeneous, still perform swaps to reduce consecutive duplicates and present the most varied sequence possible.
 
         `,
         prompt: JSON.stringify({
