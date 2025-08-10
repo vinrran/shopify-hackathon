@@ -1,0 +1,38 @@
+/* InfiniteSlider styles */
+@keyframes infinite-slider-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.infinite-slider {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+.infinite-slider__track {
+  display: inline-flex; /* keep intrinsic width */
+  align-items: center;
+  width: max-content; /* content width so translate percentages relate to total */
+  will-change: transform;
+  animation: infinite-slider-scroll var(--duration, 30s) linear infinite;
+  min-height: 1.5rem; /* ensure some height even if fonts late */
+}
+
+.infinite-slider--reverse .infinite-slider__track {
+  animation-direction: reverse;
+}
+
+.infinite-slider--pause-on-hover:hover .infinite-slider__track {
+  animation-play-state: paused;
+}
+
+.infinite-slider__item {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Optional utility for debugging layout */
+.infinite-slider--debug .infinite-slider__item { outline: 1px dashed #e2e8f0; }
