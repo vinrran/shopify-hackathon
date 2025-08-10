@@ -2,6 +2,7 @@ import { usePopularProducts } from '@shopify/shop-minis-react'
 import CardFanCarousel from '../components/CardFanCarousel'
 import LoadingScreen from '../components/LoadingScreen'
 import { useEffect } from 'react'
+import bg from '../components/background.svg'
 
 export function FanCarouselPage() {
   const hookResult = usePopularProducts?.() as { products?: any[] | null; loading?: boolean } | undefined
@@ -17,7 +18,7 @@ export function FanCarouselPage() {
   }, [])
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-start bg-white">
+    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-start" style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
       <div className="flex-1 w-full flex flex-col items-center justify-start">
         {showLoading ? (
           <LoadingScreen />
