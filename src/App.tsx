@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { SliderPage } from './pages'
 import { QuizPage } from './pages/QuizPage'
 import { LandingPage } from './pages/LandingPage'
+import { ProductsPage } from './pages/ProductsPage'
 import { FanCarouselPage } from './pages/FanCarouselPage'
 import { CardLoadingPage } from './pages/CardLoadingPage'
 import { AppProvider } from './context/AppContext'
@@ -15,6 +16,7 @@ export function App() {
     { to: '/slider', label: 'Slider' },
     { to: '/fan', label: 'Fan Carousel' },
     { to: '/card-loading', label: 'Card Loading' },
+    { to: '/products', label: 'Products' },
     { to: '/quiz', label: 'Quiz' },
   ]
 
@@ -64,6 +66,7 @@ export function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/slider" element={<SliderPage />} />
           <Route path="/fan" element={<FanCarouselPage />} />
+          <Route path="/products" element={<ProductsPage />} />
           <Route path="/card-loading" element={<CardLoadingPage />} />
           <Route
             path="/quiz"
