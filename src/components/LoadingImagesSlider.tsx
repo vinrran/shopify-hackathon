@@ -25,8 +25,7 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
     <InfiniteSlider
       durationSeconds={durationSeconds}
       gap={gap}
-      pauseOnHover={false}
-      duplicates={15}
+      duplicates={12}
       direction={direction}
       className={['mx-auto', className].filter(Boolean).join(' ')}
       itemClassName={itemClassName}

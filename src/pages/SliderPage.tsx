@@ -23,7 +23,6 @@ export function SliderPage() {
         durationSeconds={50}
         gap={36}
         direction="right"
-        pauseOnHover={false}
         duplicates={10}
   className="mx-auto h-16 flex items-center"
   itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
@@ -42,7 +41,6 @@ export function SliderPage() {
         durationSeconds={50}
         gap={36}
         direction="right"
-        pauseOnHover={false}
         duplicates={10}
   className="mx-auto h-16 flex items-center infinite-slider--delay-half"
   itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
