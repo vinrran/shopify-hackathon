@@ -52,7 +52,7 @@ export interface UIState {
     replenish: boolean
   }
   error?: string
-  currentScreen: 'quiz' | 'loading' | 'results'
+  currentScreen: 'quiz' | 'loading' | 'card' | 'fan'
 }
 
 export interface AppContextType {
@@ -73,7 +73,7 @@ export type Action =
   | { type: 'TOGGLE_FREEZE'; payload: string }
   | { type: 'SET_LOADING'; payload: { key: keyof UIState['loading']; value: boolean } }
   | { type: 'SET_ERROR'; payload: string | undefined }
-  | { type: 'SET_SCREEN'; payload: 'quiz' | 'loading' | 'results' }
+  | { type: 'SET_SCREEN'; payload: 'quiz' | 'loading' | 'card' | 'fan' }
   | { type: 'SET_OFFSET'; payload: number }
   | { type: 'SET_HAS_MORE'; payload: boolean }
   | { type: 'RESHUFFLE_UNFROZEN' }

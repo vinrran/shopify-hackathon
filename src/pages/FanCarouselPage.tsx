@@ -1,14 +1,22 @@
-import { useState } from 'react'
-import { usePopularProducts } from '@shopify/shop-minis-react'
+import { useMemo, useState } from 'react'
+import { useProducts } from '@shopify/shop-minis-react'
 import CardFanCarousel from '../components/CardFanCarousel'
 import LoadingScreen from '../components/LoadingScreen'
+import { useApp } from '../context/AppContext'
 
 export function FanCarouselPage() {
-  const hookResult = usePopularProducts?.() as { products?: any[] | null; loading?: boolean } | undefined
-  const products = (hookResult?.products ?? []) as any[]
-  const loading = hookResult?.loading ?? true
+  const { state } = useApp()
+
+  // Build Shopify product GIDs from ranked list to hydrate
+  const ids = useMemo(
+    () => (state.ranked || []).map(r => r.product_id?.startsWith('gid://shopify/Product/') ? r.product_id : `gid://shopify/Product/${r.product_id}`),
+    [state.ranked]
+  )
+
+  const { products, loading, error } = useProducts({ ids })
   const [devLoading, setDevLoading] = useState(false)
 
+  const hydrated = Array.isArray(products) ? products : []
   const showLoading = loading || devLoading
 
   return (
@@ -26,8 +34,10 @@ export function FanCarouselPage() {
 
       {showLoading ? (
         <LoadingScreen />
+      ) : error ? (
+        <div className="text-sm text-red-600">Failed to load products.</div>
       ) : (
-        <CardFanCarousel products={products} />
+        <CardFanCarousel products={hydrated} />
       )}
     </div>
   )
