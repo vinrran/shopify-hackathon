@@ -5,10 +5,10 @@ import logger from '../logger.js';
 
 const router = Router();
 
-// POST /api/ranking/build - Build top 20 ranking
+// POST /api/ranking/build - Build top ranking
 router.post('/build', async (req, res) => {
   try {
-    const { user_id, response_date, past_days = 5 } = req.body;
+    const { user_id, response_date } = req.body;
     
     if (!user_id || !response_date) {
       return res.status(400).json({ 
@@ -34,31 +34,7 @@ router.post('/build', async (req, res) => {
       const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
       formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
     }
-    
-    // Get past N days of responses and queries
-    const pastDate = new Date(response_date);
-    pastDate.setDate(pastDate.getDate() - past_days);
-    const pastDateStr = pastDate.toISOString().split('T')[0];
-    
-    const pastResponses = await db.all(
-      `SELECT ur.*, q.prompt, ur.response_date
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? 
-         AND ur.response_date >= ? 
-         AND ur.response_date < ?
-       ORDER BY ur.response_date DESC`,
-      [user_id, pastDateStr, response_date]
-    );
-    
-    const pastQueries = await db.all(
-      `SELECT query, response_date FROM search_queries 
-       WHERE user_id = ? 
-         AND response_date >= ? 
-         AND response_date < ?
-       ORDER BY response_date DESC`,
-      [user_id, pastDateStr, response_date]
-    );
+
     
     // Get products with vision data
     const products = await db.all(
@@ -95,20 +71,12 @@ router.post('/build', async (req, res) => {
       attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
     }));
     
-    // Format past data
-    const pastDaysData = {
-      responses: pastResponses.map(r => ({
-        date: r.response_date,
-        [r.prompt.toLowerCase().replace(/\s+/g, '_')]: JSON.parse(r.answer_json)
-      })),
-      queries: pastQueries.map(q => q.query)
-    };
+
     
     // Get ranking from Fal.ai using user inputs and vision data
     const rankedProducts = await rankProducts({
       todayResponses: formattedTodayResponses,
       todayQueries: [], // No longer used - ranking uses user inputs + vision data directly
-      pastDays: pastDaysData,
       products: formattedProducts
     });
     
@@ -156,7 +124,7 @@ router.post('/build', async (req, res) => {
 // GET /api/ranking - Get ranked products
 router.get('/', async (req, res) => {
   try {
-    const { user_id, response_date, limit = 20, offset = 0 } = req.query;
+    const { user_id, response_date, limit = 50, offset = 0 } = req.query;
     
     if (!user_id || !response_date) {
       return res.status(400).json({ 
