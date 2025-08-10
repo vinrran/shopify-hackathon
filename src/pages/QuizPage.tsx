@@ -1,4 +1,4 @@
-/import {useApp} from '../context/AppContext'
+import {useApp} from '../context/AppContext'
 import {QuizScreen} from '../components/QuizScreen'
 import {LoadingBridge} from '../components/LoadingBridge'
 import {ResultsScreen} from '../components/ResultsScreen'
