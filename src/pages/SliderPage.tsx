@@ -1,4 +1,5 @@
 import InfiniteSlider from '../components/InfiniteSlider'
+import LoadingImagesSlider from '../components/LoadingImagesSlider'
 
 export function SliderPage() {
   const loadingImages = [
@@ -9,38 +10,23 @@ export function SliderPage() {
   ]
 
   return (
-    <div className="pt-12 px-4 pb-6 space-y-8">
-      {/* Image slider (top, scrolling right) */}
-      <InfiniteSlider
-        durationSeconds={40}
-        gap={32}
-        pauseOnHover={false}
-        duplicates={12}
-        direction="right"
-        className="mx-auto"
-        itemClassName="flex items-center justify-center overflow-visible"
-      >
-        {loadingImages.map((src, i) => (
-          <img
-            key={`top-${i}`}
-            src={src}
-            alt={`Loading state ${i + 1}`}
-            loading="lazy"
-            className="select-none h-20 sm:h-24 w-auto object-contain"
-            draggable={false}
-          />
-        ))}
-      </InfiniteSlider>
+  <div className="min-h-screen flex flex-col px-4 py-6 bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)]">
+      {/* Top image slider */}
+      <div className="flex-shrink-0 pb-4">
+        <LoadingImagesSlider images={loadingImages} direction="right" />
+      </div>
 
-      {/* Text marquee (middle) */}
+      {/* Center content (text marquees) */}
+      <div className="flex-1 flex flex-col justify-center gap-4">
+      {/* Text marquees (staggered) */}
       <InfiniteSlider
         durationSeconds={50}
-        gap={64}
+        gap={36}
         direction="right"
         pauseOnHover={false}
         duplicates={10}
-        className="mx-auto py-4 bg-white/70 backdrop-blur-sm"
-        itemClassName="text-base sm:text-lg font-medium whitespace-nowrap px-8 min-h-[2rem]"
+  className="mx-auto h-16 flex items-center"
+  itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
       >
         {[
           'asnwer!',
@@ -49,31 +35,33 @@ export function SliderPage() {
           'Ratshoppers',
           'Securckout',
         ].map((msg, i) => (
-          <span key={`marquee-${i}`}>{msg}</span>
+          <span key={`marquee-a-${i}`}>{msg}</span>
         ))}
       </InfiniteSlider>
-
-      {/* Image slider (bottom, scrolling left) */}
       <InfiniteSlider
-        durationSeconds={40}
-        gap={32}
+        durationSeconds={50}
+        gap={36}
+        direction="right"
         pauseOnHover={false}
-        duplicates={12}
-        direction="left"
-        className="mx-auto"
-        itemClassName="flex items-center justify-center overflow-visible"
+        duplicates={10}
+  className="mx-auto h-16 flex items-center infinite-slider--delay-half"
+  itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
       >
-        {loadingImages.map((src, i) => (
-          <img
-            key={`bottom-${i}`}
-            src={src}
-            alt={`Loading state ${i + 1}`}
-            loading="lazy"
-            className="select-none h-20 sm:h-24 w-auto object-contain"
-            draggable={false}
-          />
+        {[
+          'afdwfasr',
+          'Njiojioj',
+          'awfwaf',
+          'Ratshoppers',
+          'feijfesjfie',
+        ].map((msg, i) => (
+          <span key={`marquee-b-${i}`}>{msg}</span>
         ))}
       </InfiniteSlider>
+      </div>
+      {/* Bottom image slider */}
+  <div className="flex-shrink-0 pt-4 pb-10">
+        <LoadingImagesSlider images={loadingImages} direction="left" />
+      </div>
     </div>
   )
 }
