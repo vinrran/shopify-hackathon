@@ -1,3 +1,4 @@
+
 import { Routes, Route } from 'react-router'
 import { useEffect, useState, useCallback } from 'react'
 import { SliderPage } from './pages'
@@ -57,6 +58,7 @@ export function App() {
           )
         })}
       </nav>
+
   <main className="flex-1">
         <Routes>
           <Route path="/" element={<LandingPage />} />

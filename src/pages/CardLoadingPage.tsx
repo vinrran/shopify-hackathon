@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useApp } from '../context/AppContext'
 
 interface LoadingScreenProps {
   className?: string
@@ -43,6 +45,16 @@ export function LoadingScreen({
 }
 
 export function CardLoadingPage() {
+  const { dispatch } = useApp()
+
+  // Auto-advance to fan view after the animation
+  useEffect(() => {
+    const t = setTimeout(() => {
+      dispatch({ type: 'SET_SCREEN', payload: 'fan' })
+    }, 2500)
+    return () => clearTimeout(t)
+  }, [dispatch])
+
   return (
     <div className="min-h-screen bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)] flex items-center justify-center">
       <LoadingScreen />
