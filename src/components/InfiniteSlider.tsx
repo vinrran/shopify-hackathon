@@ -3,23 +3,11 @@ import './InfiniteSlider.css'
 
 export interface InfiniteSliderProps {
   children: ReactNode | ReactNode[]
-  /** Animation duration in seconds for one full cycle */
   durationSeconds?: number
-  /** Gap in pixels between items */
   gap?: number
-  /** Scroll direction */
   direction?: 'left' | 'right'
-  /** Pause animation when user hovers */
-  pauseOnHover?: boolean
-  /** Optional className for outer wrapper */
   className?: string
-  /** Inline style overrides for outer wrapper */
-  style?: React.CSSProperties
-  /** Class applied to each duplicated item wrapper */
   itemClassName?: string
-  /** Style applied to each duplicated item wrapper */
-  itemStyle?: React.CSSProperties
-  /** How many times to duplicate the children sequence for seamless loop (>=2) */
   duplicates?: number
 }
 
@@ -32,11 +20,8 @@ export const InfiniteSlider: React.FC<InfiniteSliderProps> = ({
   durationSeconds = 30,
   gap = 24,
   direction = 'right',
-  pauseOnHover = false,
   className = '',
-  style,
   itemClassName = '',
-  itemStyle,
   duplicates = 2,
 }) => {
   const items = useMemo(() => React.Children.toArray(children), [children])
@@ -66,10 +51,8 @@ export const InfiniteSlider: React.FC<InfiniteSliderProps> = ({
       className={[
         'infinite-slider',
         direction === 'right' ? 'infinite-slider--reverse' : '',
-        pauseOnHover ? 'infinite-slider--pause-on-hover' : '',
         className,
       ].join(' ')}
-      style={style}
     >
       <div
         className="infinite-slider__track"
@@ -79,10 +62,10 @@ export const InfiniteSlider: React.FC<InfiniteSliderProps> = ({
           columnGap: gap, // for future-proof even though we set marginRight below
         }}
       >
-  {duplicated.map((child, idx) => (
+    {duplicated.map((child, idx) => (
           <div
             className={["infinite-slider__item", itemClassName].filter(Boolean).join(' ')}
-            style={{marginRight: gap, ...itemStyle}}
+      style={{marginRight: gap}}
             key={idx}
           >
             {child}
