@@ -23,6 +23,17 @@ export function QuizPage() {
         if (submitting) return
         setSubmitting(true)
         try {
+          // Store the original DailyFortune answers for sharing
+          // Convert from the enriched format back to QuestionAnswer format
+          const dailyFortuneAnswers = ans.map(a => {
+            const question = firstThree.find(q => q.title === a.question)
+            return {
+              questionId: question?.id || '',
+              value: a.value
+            }
+          }).filter(a => a.questionId !== '') // Remove any that couldn't be matched
+          dispatch({ type: 'SET_DAILY_FORTUNE_ANSWERS', payload: dailyFortuneAnswers })
+
           // Map answers to a simple backend-friendly shape
           const answers = ans.map((a, idx) => ({
             qid: idx + 1,

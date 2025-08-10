@@ -1,4 +1,5 @@
 // Type definitions for the Shop Mini app
+import type { QuestionAnswer } from '../components/DailyFortune/question-types'
 
 export interface Question {
   id: number
@@ -35,6 +36,7 @@ export interface UIState {
   today: string // YYYY-MM-DD
   questions: Question[]
   answers: Record<number, string | string[]>
+  dailyFortuneAnswers: QuestionAnswer[] // Store original DailyFortune answers
   generatedQueries: string[]
   ranked: RankedProduct[]
   frozenIds: Set<string>
@@ -67,6 +69,7 @@ export interface AppContextType {
 export type Action =
   | { type: 'SET_QUESTIONS'; payload: Question[] }
   | { type: 'SET_ANSWER'; payload: { qid: number; answer: string | string[] } }
+  | { type: 'SET_DAILY_FORTUNE_ANSWERS'; payload: QuestionAnswer[] }
   | { type: 'SET_QUERIES'; payload: string[] }
   | { type: 'SET_RANKED'; payload: RankedProduct[] }
   | { type: 'APPEND_RANKED'; payload: RankedProduct[] }
