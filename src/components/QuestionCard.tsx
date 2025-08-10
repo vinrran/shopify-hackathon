@@ -1,5 +1,4 @@
 // Question card component for displaying individual questions
-import React from 'react'
 import { Question } from '../types'
 
 interface QuestionCardProps {

@@ -25,7 +25,7 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
     <InfiniteSlider
       durationSeconds={durationSeconds}
       gap={gap}
-      duplicates={12}
+      duplicates={10}
       direction={direction}
       className={['mx-auto', className].filter(Boolean).join(' ')}
       itemClassName={itemClassName}
@@ -34,7 +34,6 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
         <div
           key={`${direction}-${i}`}
           className="relative h-60 sm:h-44 md:h-48 flex items-center justify-center overflow-hidden rounded-xl"
-          style={{paddingLeft: '2px', paddingRight: '2px', paddingTop: '2px', paddingBottom: '2px'}}
         >
           <img
             src={src}
@@ -43,9 +42,6 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
             className="select-none h-full w-auto object-contain"
             draggable={false}
           />
-          {/* overlay masks to crop exactly 2px on each side visually (optional, kept minimal) */}
-          <span className="pointer-events-none absolute inset-y-0 left-0 w-[2px] bg-blue-900" />
-          <span className="pointer-events-none absolute inset-y-0 right-0 w-[2px] bg-blue-900" />
         </div>
       ))}
     </InfiniteSlider>

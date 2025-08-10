@@ -24,7 +24,7 @@ export function SliderPage() {
         gap={36}
         direction="right"
         duplicates={10}
-  className="mx-auto h-16 flex items-center"
+  className="mx-auto h-12 flex items-center"
   itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
       >
         {[
@@ -42,7 +42,7 @@ export function SliderPage() {
         gap={36}
         direction="right"
         duplicates={10}
-  className="mx-auto h-16 flex items-center infinite-slider--delay-half"
+  className="mx-auto h-12 flex items-center infinite-slider--delay-half"
   itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
       >
         {[
@@ -57,7 +57,7 @@ export function SliderPage() {
       </InfiniteSlider>
       </div>
       {/* Bottom image slider */}
-  <div className="flex-shrink-0 pt-4 pb-10">
+  <div className="flex-shrink-0 pt-4 pb-20">
         <LoadingImagesSlider images={loadingImages} direction="left" />
       </div>
     </div>
