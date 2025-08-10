@@ -1,1 +1,40 @@
 @import "@shopify/shop-minis-react/styles";
+
+@keyframes spin-and-exit {
+	0% { 
+		rotate: 0deg; 
+		transform: translateX(0) translateY(0);
+		opacity: 1;
+	}
+	70% { 
+		rotate: 540deg; 
+		transform: translateX(0) translateY(0);
+		opacity: 1;
+	}
+	100% { 
+		rotate: 540deg; 
+		transform: translateX(150vw) translateY(0);
+		opacity: 0;
+	}
+}
+
+.animate-spin-and-exit {
+	animation: spin-and-exit 2s ease-out forwards;
+}
+
+/* Line clamp utilities for text truncation */
+.line-clamp-2 {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	line-clamp: 2;
+	overflow: hidden;
+}
+
+.line-clamp-3 {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	line-clamp: 3;
+	overflow: hidden;
+}
