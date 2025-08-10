@@ -9,6 +9,7 @@ const initialState: UIState = {
   today: new Date().toISOString().split('T')[0],
   questions: [],
   answers: {},
+  dailyFortuneAnswers: [],
   generatedQueries: [],
   ranked: [],
   frozenIds: new Set(),
@@ -43,6 +44,9 @@ function appReducer(state: UIState, action: Action): UIState {
           [action.payload.qid]: action.payload.answer,
         },
       }
+    
+    case 'SET_DAILY_FORTUNE_ANSWERS':
+      return { ...state, dailyFortuneAnswers: action.payload }
     
     case 'SET_QUERIES':
       return { ...state, generatedQueries: action.payload }
