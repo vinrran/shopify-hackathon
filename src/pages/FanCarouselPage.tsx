@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react'
 import { useProducts } from '@shopify/shop-minis-react'
 import CardFanCarousel from '../components/CardFanCarousel'
 import LoadingScreen from '../components/LoadingScreen'
+import { useEffect } from 'react'
+import bg from '../components/background.svg'
 import { useApp } from '../context/AppContext'
 
 export function FanCarouselPage() {
@@ -22,7 +24,7 @@ export function FanCarouselPage() {
 
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-start bg-white">
+    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-start" style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
       <div className="flex-1 w-full flex flex-col items-center justify-start">
         {showLoading ? (
           <LoadingScreen />
