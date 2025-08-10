@@ -7,6 +7,7 @@ import { ProductsPage } from './pages/ProductsPage'
 import { FanCarouselPage } from './pages/FanCarouselPage'
 import { CardLoadingPage } from './pages/CardLoadingPage'
 import { AppProvider } from './context/AppContext'
+import bg from './components/background.svg'
 
 export function App() {
   const links = [
@@ -36,9 +37,11 @@ export function App() {
     }
   }, [])
 
+  const isLanding = path === '/'
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <nav className="sticky top-0 z-10 flex flex-wrap gap-2 items-center px-4 py-3 bg-white/80 backdrop-blur border-b text-sm">
+    <div className="min-h-screen flex flex-col relative" style={isLanding ? undefined : { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+      <nav className="sticky top-0 z-10 flex flex-wrap gap-2 items-center px-4 py-3 bg-white/60 backdrop-blur border-b text-sm">
         {links.map(l => {
           const active = path === l.to
           return (
@@ -56,7 +59,7 @@ export function App() {
           )
         })}
       </nav>
-      <main className="flex-1">
+  <main className="flex-1">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/slider" element={<SliderPage />} />
