@@ -1,7 +1,10 @@
 import {SliderPage} from './pages'
+import {QuizPage} from './pages/QuizPage'
 import {AboutPage} from './pages/AboutPage'
 import {ProductsPage} from './pages/ProductsPage'
+import {FanCarouselPage} from './pages/FanCarouselPage'
 import {useEffect, useState} from 'react'
+import {AppProvider} from './context/AppContext'
 
 export function App() {
   const [route, setRoute] = useState<string>(() => window.location.hash.slice(1) || 'about')
@@ -20,6 +23,10 @@ export function App() {
         return ProductsPage
       case 'slider':
         return SliderPage
+      case 'quiz':
+        return QuizPage
+      case 'fan':
+        return FanCarouselPage
       default:
         return AboutPage
     }
@@ -30,7 +37,9 @@ export function App() {
       <nav className="sticky top-0 z-10 flex gap-4 items-center px-4 py-3 bg-white/80 backdrop-blur border-b text-sm">
         {[
           {to: 'slider', label: 'Slider'},
+          {to: 'fan', label: 'Fan Carousel'},
           {to: 'products', label: 'Products'},
+          {to: 'quiz', label: 'Quiz'},
           {to: 'about', label: 'About'},
         ].map(link => (
           <a
@@ -46,7 +55,13 @@ export function App() {
         ))}
       </nav>
       <main className="flex-1">
-        <Page />
+        {route === 'quiz' ? (
+          <AppProvider>
+            <QuizPage />
+          </AppProvider>
+        ) : (
+          <Page />
+        )}
       </main>
     </div>
   )
