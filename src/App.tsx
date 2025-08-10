@@ -3,6 +3,7 @@ import {QuizPage} from './pages/QuizPage'
 import {AboutPage} from './pages/AboutPage'
 import {ProductsPage} from './pages/ProductsPage'
 import {FanCarouselPage} from './pages/FanCarouselPage'
+import {CardLoadingPage} from './pages/CardLoadingPage'
 import {useEffect, useState} from 'react'
 import {AppProvider} from './context/AppContext'
 
@@ -27,6 +28,8 @@ export function App() {
         return QuizPage
       case 'fan':
         return FanCarouselPage
+      case 'card-loading':
+        return CardLoadingPage
       default:
         return AboutPage
     }
@@ -38,6 +41,7 @@ export function App() {
         {[
           {to: 'slider', label: 'Slider'},
           {to: 'fan', label: 'Fan Carousel'},
+          {to: 'card-loading', label: 'Card Loading'},
           {to: 'products', label: 'Products'},
           {to: 'quiz', label: 'Quiz'},
           {to: 'about', label: 'About'},
