@@ -9,6 +9,7 @@ import { FanCarouselPage } from './pages/FanCarouselPage'
 import { CardLoadingPage } from './pages/CardLoadingPage'
 import { AppProvider } from './context/AppContext'
 import bg from './components/background.svg'
+import { MainFlow } from './components/MainFlow'
 
 export function App() {
   const links = [
@@ -72,7 +73,7 @@ export function App() {
             path="/quiz"
             element={
               <AppProvider>
-                <QuizPage />
+                <MainFlow  />
               </AppProvider>
             }
           />

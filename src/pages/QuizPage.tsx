@@ -8,27 +8,18 @@ import { api } from '../services/api'
 
 export function QuizPage() {
   const { state, dispatch } = useApp()
-  const [completed, setCompleted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const { buyerAttributes } = useBuyerAttributes()
   const genderAffinity = (buyerAttributes as any)?.genderAffinity || (buyerAttributes as any)?.gender || null
 
   const firstThree = QUESTIONS.slice(0, 3)
 
-  if (completed) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 text-center">
-        <p className="text-gray-600 max-w-md mb-4">Thanks for sharing your vibe. Preparing your personalized picks...</p>
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
-      </div>
-    )
-  }
-
   return (
     <DailyFortuneQuestions
       questions={firstThree}
       onComplete={async (ans) => {
-        setCompleted(true)
+        // Immediately navigate to loading (SliderPage) with no visual delay
+        dispatch({ type: 'SET_SCREEN', payload: 'loading' })
         if (submitting) return
         setSubmitting(true)
         try {
@@ -52,11 +43,10 @@ export function QuizPage() {
           })
           dispatch({ type: 'SET_QUERIES', payload: queriesResponse.queries })
 
-          // Move to loading bridge
-          dispatch({ type: 'SET_SCREEN', payload: 'loading' })
+          // Already navigated above; just finish background setup
         } catch (e) {
           dispatch({ type: 'SET_ERROR', payload: 'Failed to submit responses. Please try again.' })
-          setCompleted(false)
+          // If an error occurs, stay on loading flow but state shows error
         } finally {
           setSubmitting(false)
           dispatch({ type: 'SET_LOADING', payload: { key: 'submitAnswers', value: false } })
