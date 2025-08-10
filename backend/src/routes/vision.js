@@ -122,7 +122,7 @@ router.post('/process', async (req, res) => {
     // Process ALL images in parallel with high concurrency
     const { processImagesVisionBatch } = await import('../services/falService.js');
     const imageUrls = unprocessedProducts.map(p => p.image_url);
-    const maxConcurrency = Math.min(20, unprocessedProducts.length); // Process up to 20 images at once
+    const maxConcurrency = Math.min(24, unprocessedProducts.length); // Process up to 20 images at once
     
     logger.info(`Processing ${imageUrls.length} images in parallel with concurrency ${maxConcurrency}`);
     const visionResults = await processImagesVisionBatch(imageUrls, maxConcurrency);
