@@ -21,7 +21,7 @@ export function SliderPage() {
           'Free shipping over $50',
           'New arrivals dropping weekly',
           'Limited time: 20% off select items',
-          'Rated 5⭐ by shoppers',
+          'Rated 5* by shoppers',
           'Secure checkout',
         ].map((msg, i) => (
           <span key={i}>{msg}</span>
