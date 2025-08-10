@@ -140,8 +140,8 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
 
   return (
     <div className="w-full max-w-lg mx-auto px-1 py-2 overflow-visible">
+      {/* Header removed; page controls the 'Fortunes' title */}
       <div className="mb-3 mt-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-1 text-center">Fortunes</h3>
         <div className="flex justify-center gap-2 px-2">
           {[0,1,2].map(spotIndex => (
             <div key={spotIndex} className={`w-30 rounded-lg transition-all duration-200 ${
@@ -203,7 +203,6 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           📤
         </button>
       </div>
-      
       <div className="pb-8" />
       
       {/* Share Screen Modal */}
