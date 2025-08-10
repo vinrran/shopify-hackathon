@@ -7,7 +7,7 @@ import { MultipleChoiceQuestionComponent } from "./MultipleChoiceQuestion"
 
 interface DailyFortuneQuestionsProps {
   questions?: Question[]
-  onComplete?: (answers: QuestionAnswer[]) => void
+  onComplete?: (answers: Array<{ question: string; value: number | string | string[] }>) => void
 }
 
 export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQuestionsProps) {
@@ -41,10 +41,14 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
         setIsTransitioning(false)
       }, 200)
     } else {
+      const enriched = answers.map(a => {
+        const q = localQuestions.find(q => q.id === a.questionId)
+        return { question: q?.title || '', value: a.value }
+      })
       if (onComplete) {
-        onComplete(answers)
+        onComplete(enriched)
       } else {
-        console.log("Answers:", answers)
+        console.log("Answers:", enriched)
         alert("Questions completed! Ready to generate your daily fortune. ✨")
       }
     }
