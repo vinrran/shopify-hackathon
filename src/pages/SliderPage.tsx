@@ -1,7 +1,201 @@
+// src/pages/SliderPage.tsx
+import React, { useEffect, useState } from 'react'
+import { useProductSearch, useRecommendedProducts } from '@shopify/shop-minis-react'
+import { useApp } from '../context/AppContext'
+import { api } from '../services/api'
+import type { Product } from '../types'
+
 import InfiniteSlider from '../components/InfiniteSlider'
 import LoadingImagesSlider from '../components/LoadingImagesSlider'
 
+/**
+ * SliderPage (Shop Mini)
+ * Phases:
+ *  1) search        — useProductSearch across all queries w/ pagination, cache + store
+ *  2) recommended   — useRecommendedProducts once, cache + store
+ *  3) ranking       — backend builds ranking; hydrate ranked items from cache; go to results
+ *
+ * UI: Slider-based loading screen (top + bottom image sliders, center text marquees).
+ * Hooks and API calls remain exactly the same as before.
+ */
 export function SliderPage() {
+  const { state, dispatch } = useApp()
+  const [phase, setPhase] = useState<'search' | 'recommended' | 'ranking'>('search')
+  const [qIndex, setQIndex] = useState(0)
+
+  // Local cache of ALL found products (search + recommended), used to hydrate ranking
+  const [accumulated, setAccumulated] = useState<Product[]>([])
+
+  const queries = state.generatedQueries || []
+  const currentQuery = queries[qIndex] || ''
+
+  // Build marquee texts from quiz answers
+  const marqueeTexts = (() => {
+    try {
+      const entries = (state.questions || [])
+        .map((q: any) => {
+          const ans = (state.answers as any)?.[q.id]
+          const ansText = typeof ans === 'string' ? ans : ans?.label ?? JSON.stringify(ans)
+          return ansText ? `${q.title || q.text || q.prompt || 'Q'}: ${ansText}` : null
+        })
+        .filter(Boolean) as string[]
+      return entries.length > 0 ? entries : ['Preparing your picks', 'Finding your vibe', 'Curating top matches']
+    } catch {
+      return ['Preparing your picks', 'Finding your vibe', 'Curating top matches']
+    }
+  })()
+
+  const dedupeById = (list: Product[]) => {
+    const seen = new Set<string>()
+    return list.filter((p: any) => {
+      const id = p?.product_id || p?.id
+      if (!id) return false
+      if (seen.has(id)) return false
+      seen.add(id)
+      return true
+    })
+  }
+
+  const toMapById = (list: Product[]) => {
+    const map = new Map<string, Product>()
+    for (const p of list) {
+      const id = (p as any)?.product_id || (p as any)?.id
+      if (id) map.set(id, p)
+    }
+    return map
+  }
+
+  // same transform as before
+  const transformShopifyProduct = (p: any): Product => {
+    const image =
+      p?.featuredImage?.url ??
+      p?.images?.edges?.[0]?.node?.url ??
+      p?.images?.[0]?.url ??
+      p?.images?.[0] ??
+      ''
+
+    const priceAmount =
+      p?.priceRange?.minVariantPrice?.amount ??
+      p?.priceRangeV2?.minVariantPrice?.amount ??
+      p?.minPrice ??
+      p?.price?.amount ??
+      p?.variants?.[0]?.price?.amount ??
+      p?.variants?.edges?.[0]?.node?.price?.amount ??
+      null
+
+    const currencyCode =
+      p?.priceRange?.minVariantPrice?.currencyCode ??
+      p?.priceRangeV2?.minVariantPrice?.currencyCode ??
+      p?.currency ??
+      p?.price?.currencyCode ??
+      p?.variants?.[0]?.price?.currencyCode ??
+      p?.variants?.edges?.[0]?.node?.price?.currencyCode ??
+      'USD'
+
+    const vendor =
+      p?.vendor ??
+      p?.vendorName ??
+      p?.brand ??
+      p?.merchant?.name ??
+      p?.store?.name ??
+      'Unknown'
+
+    const url =
+      p?.onlineStoreUrl ??
+      p?.url ??
+      p?.webUrl ??
+      (p?.handle && p?.store?.domain ? `https://${p.store.domain}/products/${p.handle}` : '')
+
+    return {
+      product_id: p?.id ?? p?.product_id ?? '',
+      title: p?.title ?? p?.name ?? '',
+      vendor,
+      price: priceAmount ?? undefined,
+      currency: currencyCode,
+      url: url || undefined,
+      thumbnail_url: image || undefined,
+      images:
+        p?.images?.edges?.map((e: any) => e.node?.url).filter(Boolean) ??
+        (Array.isArray(p?.images) ? p.images : []),
+      raw: p,
+    }
+  }
+
+  /** After finishing one query (all pages), merge and store; move to next or to recommended */
+  const finishQuery = async (collectedForThisQuery: any[]) => {
+    try {
+      const transformed = (collectedForThisQuery || []).map(transformShopifyProduct)
+      const merged = dedupeById([...accumulated, ...transformed])
+      setAccumulated(merged)
+
+      if (qIndex < queries.length - 1) {
+        setQIndex((i) => i + 1)
+      } else {
+        if (merged.length > 0) {
+          await api.storeProducts(state.userId, state.today, 'search', merged)
+        }
+        setPhase('recommended')
+      }
+    } catch (e) {
+      console.error('finishQuery error:', e)
+      if (qIndex < queries.length - 1) setQIndex((i) => i + 1)
+      else setPhase('recommended')
+    }
+  }
+
+  const handleRecommendedDone = async (productsFromHook: any[]) => {
+    try {
+      const transformed = (productsFromHook || []).map(transformShopifyProduct)
+      if (transformed.length > 0) {
+        setAccumulated((prev) => dedupeById([...prev, ...transformed]))
+        await api.storeRecommendedProducts(state.userId, state.today, transformed)
+      }
+    } catch (e) {
+      console.error('processRecommendedProducts error:', e)
+    } finally {
+      setPhase('ranking')
+    }
+  }
+
+  // Trigger ranking exactly once when we enter phase='ranking'
+  useEffect(() => {
+    if (phase !== 'ranking') return
+
+    const buildAndFetchRanking = async () => {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
+      try {
+        await api.processProductVision(state.userId, state.today, accumulated)
+
+        await api.buildRanking(state.userId, state.today)
+        dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: true } })
+        const ranking = await api.getRanking(state.userId, state.today, 50, 0)
+
+        const cache = toMapById(accumulated)
+        const hydrated = (ranking.top || []).map((r: any) => {
+          const full = cache.get(r.product_id)
+          return full
+            ? { ...full, score: r.score, reason: r.reason }
+            : { product_id: r.product_id, score: r.score, reason: r.reason }
+        })
+
+        dispatch({ type: 'SET_RANKED', payload: hydrated })
+        dispatch({ type: 'SET_HAS_MORE', payload: !!ranking.has_more })
+        dispatch({ type: 'SET_SCREEN', payload: 'card' })
+      } catch (err) {
+        console.error('buildAndFetchRanking error:', err)
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to build recommendations. Please try again.' })
+        dispatch({ type: 'SET_SCREEN', payload: 'card' })
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: false } })
+        dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: false } })
+      }
+    }
+
+    buildAndFetchRanking()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase])
+
+  // ------- Slider UI while everything runs in the background -------
   const loadingImages = [
     'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
     'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
@@ -10,7 +204,7 @@ export function SliderPage() {
   ]
 
   return (
-  <div className="min-h-screen flex flex-col px-4 py-6 bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)]">
+    <div className="min-h-screen flex flex-col px-4 py-6 bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)]">
       {/* Top image slider */}
       <div className="flex-shrink-0 pb-4">
         <LoadingImagesSlider images={loadingImages} direction="right" />
@@ -18,50 +212,168 @@ export function SliderPage() {
 
       {/* Center content (text marquees) */}
       <div className="flex-1 flex flex-col justify-center gap-4">
-      {/* Text marquees (staggered) */}
-      <InfiniteSlider
-        durationSeconds={50}
-        gap={36}
-        direction="right"
-        duplicates={10}
-  className="mx-auto h-12 flex items-center"
-  itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-      >
-        {[
-          'asnwer!',
-          'Njiojioj',
-          'Ljiect items',
-          'Ratshoppers',
-          'Securckout',
-        ].map((msg, i) => (
-          <span key={`marquee-a-${i}`}>{msg}</span>
-        ))}
-      </InfiniteSlider>
-      <InfiniteSlider
-        durationSeconds={50}
-        gap={36}
-        direction="right"
-        duplicates={10}
-  className="mx-auto h-12 flex items-center infinite-slider--delay-half"
-  itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-      >
-        {[
-          'afdwfasr',
-          'Njiojioj',
-          'awfwaf',
-          'Ratshoppers',
-          'feijfesjfie',
-        ].map((msg, i) => (
-          <span key={`marquee-b-${i}`}>{msg}</span>
-        ))}
-      </InfiniteSlider>
+        <InfiniteSlider
+          durationSeconds={50}
+          gap={36}
+          direction="right"
+          duplicates={10}
+          className="mx-auto h-12 flex items-center"
+          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+        >
+          {marqueeTexts.map((msg, i) => (
+            <span key={`marquee-a-${i}`}>{msg}</span>
+          ))}
+        </InfiniteSlider>
+
+        <InfiniteSlider
+          durationSeconds={50}
+          gap={36}
+          direction="right"
+          duplicates={10}
+          className="mx-auto h-12 flex items-center infinite-slider--delay-half"
+          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+        >
+          {[...marqueeTexts].reverse().map((msg, i) => (
+            <span key={`marquee-b-${i}`}>{msg}</span>
+          ))}
+        </InfiniteSlider>
       </div>
+
       {/* Bottom image slider */}
-  <div className="flex-shrink-0 pt-4 pb-20">
+      <div className="flex-shrink-0 pt-4 pb-20">
         <LoadingImagesSlider images={loadingImages} direction="left" />
       </div>
+
+      {/* Invisible runners that perform the work exactly as before */}
+      {phase === 'search' && !!currentQuery && (
+        <SearchStep
+          query={currentQuery}
+          onDone={(items) => finishQuery(items)}
+          onError={() => finishQuery([])}
+        />
+      )}
+
+      {phase === 'recommended' && (
+        <RecommendedStep
+          onDone={handleRecommendedDone}
+          onError={() => setPhase('ranking')}
+        />
+      )}
     </div>
   )
+}
+
+/* --------------------------- Phase subcomponents --------------------------- */
+
+function normalizeProductsShape(products: any): any[] {
+  if (!products) return []
+  if (Array.isArray(products)) return products
+  if ((products as any).edges) return (products as any).edges.map((e: any) => e.node)
+  if ((products as any).items) return (products as any).items
+  if ((products as any).results) return (products as any).results
+  return []
+}
+
+function SearchStep({
+  query,
+  onDone,
+  onError
+}: {
+  query: string
+  onDone: (products: any[]) => void
+  onError: (err: unknown) => void
+}) {
+  const { products, loading, error, hasNextPage, fetchMore } = useProductSearch({ query, first: 3 })
+
+  const [collected, setCollected] = useState<any[]>([])
+  const [pagesFetched, setPagesFetched] = useState(0)
+  const MAX_PAGES = 1
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!loading && collected.length === 0 && !hasNextPage) {
+        onDone([])
+      }
+    }, 6000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasNextPage, collected.length])
+
+  useEffect(() => {
+    if (loading) return
+
+    if (error) {
+      onError(error)
+      return
+    }
+
+    const current = normalizeProductsShape(products)
+    setCollected((prev) => [...prev, ...current])
+
+    if (hasNextPage && pagesFetched < MAX_PAGES) {
+      setPagesFetched((n) => n + 1)
+      fetchMore?.().catch((e: any) => {
+        console.error('fetchMore failed:', e)
+        onDone([...collected, ...current])
+      })
+      return
+    }
+
+    onDone([...collected, ...current])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, loading, error, hasNextPage])
+
+  useEffect(() => {
+    setCollected([])
+    setPagesFetched(0)
+  }, [query])
+
+  return null
+}
+
+function RecommendedStep({
+  onDone,
+  onError
+}: {
+  onDone: (products: any[]) => void
+  onError: (err: unknown) => void
+}) {
+  const { products, loading, error, hasNextPage, fetchMore } = useRecommendedProducts({ first: 6 })
+
+  const [collected, setCollected] = useState<any[]>([])
+  const [pagesFetched, setPagesFetched] = useState(0)
+  const MAX_PAGES = 1
+
+  useEffect(() => {
+    if (loading) return
+
+    if (error) {
+      onError(error)
+      return
+    }
+
+    const current = normalizeProductsShape(products)
+    setCollected((prev) => [...prev, ...current])
+
+    if (hasNextPage && pagesFetched < MAX_PAGES) {
+      setPagesFetched((n) => n + 1)
+      fetchMore?.().catch((e: any) => {
+        console.error('fetchMore (recommended) failed:', e)
+        onDone([...collected, ...current])
+      })
+      return
+    }
+
+    onDone([...collected, ...current])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, loading, error, hasNextPage])
+
+  useEffect(() => {
+    setCollected([])
+    setPagesFetched(0)
+  }, [])
+
+  return null
 }
 
 export default SliderPage

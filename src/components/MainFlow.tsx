@@ -1,9 +1,10 @@
 // Main flow orchestrator component
 import React, { useEffect } from 'react'
 import { useApp } from '../context/AppContext'
-import { QuizScreen } from './QuizScreen'
-import { LoadingBridge } from './LoadingBridge'
-import { ResultsScreen } from './ResultsScreen'
+import { QuizPage } from '../pages/QuizPage'
+import { CardLoadingPage } from '../pages/CardLoadingPage'
+import { FanCarouselPage } from '../pages/FanCarouselPage'
+import { SliderPage } from '../pages/SliderPage'
 
 export function MainFlow() {
   const { state } = useApp()
@@ -11,15 +12,18 @@ export function MainFlow() {
   // Render different screens based on current state
   switch (state.currentScreen) {
     case 'quiz':
-      return <QuizScreen />
+      return <QuizPage />
     
     case 'loading':
-      return <LoadingBridge />
+      return <SliderPage />
     
-    case 'results':
-      return <ResultsScreen />
+    case 'card':
+      return <CardLoadingPage />
+
+    case 'fan':
+      return <FanCarouselPage />
     
     default:
-      return <QuizScreen />
+      return <QuizPage />
   }
 }
