@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import type { SliderQuestion } from "./question-types"
 import '../DailyFortune/SliderQuestion.css'
-import bg from '../../components/sliderbg2.svg'
 
 interface SliderQuestionProps {
   question: SliderQuestion
@@ -11,123 +10,191 @@ interface SliderQuestionProps {
 
 export function SliderQuestionComponent({ question, value = question.defaultValue, onChange }: SliderQuestionProps) {
   const [currentValue, setCurrentValue] = useState(value)
-  const isDragging = useRef(false)
+
+  const handleValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(event.target.value)
+    setCurrentValue(val)
+    onChange(val)
+  }
+
+  /* ---------------------- Arch (Arc) Slider internals ---------------------- */
+  // visual
+  const radius = 140 // px
+  const strokeWidth = 14
+  const startAngle = Math.PI // 180° (left)
+  const endAngle = 0         // 0° (right)
+  const sweepAngle = startAngle - endAngle
+  const svgWidth = radius * 2
+  const svgHeight = radius + strokeWidth * 1.5
+
+  // path + dash progress
+  const pathRef = useRef<SVGPathElement | null>(null)
+  const [pathLength, setPathLength] = useState(1)
+  useEffect(() => {
+    if (pathRef.current) {
+      setPathLength(pathRef.current.getTotalLength())
+    }
+  }, [])
+
+  const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+  const snapToStep = (n: number) => {
+    const stepped = Math.round((n - question.min) / question.step) * question.step + question.min
+    return clamp(stepped, question.min, question.max)
+  }
+
+  const valueFraction = (currentValue - question.min) / (question.max - question.min)
+  const currentAngle = startAngle - valueFraction * sweepAngle
+  const thumbX = radius + radius * Math.cos(currentAngle)
+  const thumbY = radius + radius * Math.sin(currentAngle)
+  const progressLength = pathLength * valueFraction
+
   const svgRef = useRef<SVGSVGElement | null>(null)
+  const draggingRef = useRef(false)
 
-  const min = question.min
-  const max = question.max
-  const startAngle = 180 // degrees (left)
-  const endAngle = 0 // degrees (right)
-  const size = 280
-  const stroke = 14
-  const radius = (size / 2) - stroke - 4
-  const cx = size / 2
-  const cy = size / 2
-
-  // Linear slider handler removed; using pointer-driven arc slider instead
-
-  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
-  const valueToAngle = (v: number) => startAngle + ((v - min) / (max - min)) * (endAngle - startAngle)
-  const angleToValue = (a: number) => {
-    const t = (a - startAngle) / (endAngle - startAngle)
-    return Math.round(min + t * (max - min))
-  }
-  const toRad = (deg: number) => (deg - 90) * Math.PI / 180
-  const polarToCartesian = (centerX: number, centerY: number, r: number, angleInDegrees: number) => {
-    const a = toRad(angleInDegrees)
-    return { x: centerX + (r * Math.cos(a)), y: centerY + (r * Math.sin(a)) }
-  }
-  const describeArc = (x: number, y: number, r: number, start: number, end: number) => {
-    const startPt = polarToCartesian(x, y, r, end)
-    const endPt = polarToCartesian(x, y, r, start)
-    const largeArcFlag = end - start <= 180 ? 0 : 1
-    return [
-      "M", startPt.x, startPt.y,
-      "A", r, r, 0, largeArcFlag, 0, endPt.x, endPt.y
-    ].join(" ")
-  }
-
-  const updateFromPointer = (clientX: number, clientY: number) => {
-    const svg = svgRef.current
-    if (!svg) return
+  const updateFromPointer = useCallback((clientX: number, clientY: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect()
     const x = clientX - rect.left
     const y = clientY - rect.top
-    const dx = x - cx
-    const dy = y - cy
-    let ang = Math.atan2(dy, dx) * 180 / Math.PI + 90 // convert to our 0 at top
-    if (ang < 0) ang += 360
-    // Map to [startAngle..endAngle] across top semicircle
-    // Our valid arc is from 180 down to 0
-    if (ang > 180) ang = 180
-    if (ang < 0) ang = 0
-    ang = clamp(ang, endAngle, startAngle)
-    const newVal = clamp(angleToValue(ang), min, max)
+    const dx = x - radius
+    const dy = y - radius
+    let angle = Math.atan2(dy, dx) // -PI..PI
+
+    // constrain to top semicircle
+    if (angle > 0) angle = 0
+    if (angle < -Math.PI) angle = -Math.PI
+
+    // convert angle to fraction across the semi-circle (PI → 0 maps to 0 → 1)
+    const frac = (Math.PI - Math.abs(angle)) / Math.PI
+    const rawVal = question.min + frac * (question.max - question.min)
+    const newVal = snapToStep(rawVal)
+
     setCurrentValue(newVal)
     onChange(newVal)
-  }
+  }, [onChange, question.max, question.min, question.step])
 
   useEffect(() => {
-    const onMove = (e: PointerEvent) => { if (isDragging.current) updateFromPointer(e.clientX, e.clientY) }
-    const onUp = () => { isDragging.current = false }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp) }
-  }, [])
+    const handleMove = (e: PointerEvent) => {
+      if (!draggingRef.current || !svgRef.current) return
+      updateFromPointer(e.clientX, e.clientY, svgRef.current)
+    }
+    const stop = () => { draggingRef.current = false }
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
+    }
+  }, [updateFromPointer])
+
+  const startDrag = (e: React.PointerEvent) => {
+    if (!svgRef.current) return
+    draggingRef.current = true
+    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    updateFromPointer(e.clientX, e.clientY, svgRef.current)
+  }
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const newVal = snapToStep(currentValue - question.step)
+      setCurrentValue(newVal); onChange(newVal)
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const newVal = snapToStep(currentValue + question.step)
+      setCurrentValue(newVal); onChange(newVal)
+    }
+  }
+  /* ------------------------------------------------------------------------ */
 
   return (
-    <div
-      className="space-y-8 px-4 df-range min-h-screen -mx-4"
-      style={{
-        backgroundImage: `url(${bg})`,
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-      }}
-    >
-      <div className="text-center space-y-3 pt-10">
-        <h2 className="text-3xl font-semibold text-[#ffcd61] leading-tight">{question.title}</h2>
-        {question.subtitle && <p className="text-amber-100/80 text-lg">{question.subtitle}</p>}
+    <div className="space-y-8 px-4 df-range -mx-4">
+      <div className="text-center space-y-3 pt-4">
+        <div className="bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
+          <h2 className="text-4xl font-bold text-white drop-shadow-lg leading-tight tracking-wide">{question.title}</h2>
+          {question.subtitle && <p className="text-white/95 text-xl drop-shadow-md mt-3 font-medium">{question.subtitle}</p>}
+        </div>
       </div>
 
-      <div className="space-y-8 mt-8">
+      <div className="space-y-6 mt-2">
         <div className="flex justify-between text-sm px-2 text-amber-100/80">
           <span className="text-base font-medium">{question.leftLabel}</span>
           <span className="text-base font-medium">{question.rightLabel}</span>
         </div>
 
-        {/* Circular arc slider */}
-        <div className="relative flex items-center justify-center">
-          <svg
-            ref={svgRef}
-            width={size}
-            height={size / 1.2}
-            viewBox={`0 0 ${size} ${size/1.2}`}
-            onPointerDown={(e) => { isDragging.current = true; updateFromPointer(e.clientX, e.clientY) }}
-            className="touch-none select-none"
-          >
-            {/* Track */}
-            <path d={describeArc(cx, cy, radius, startAngle, endAngle)} stroke="rgba(255,205,97,0.25)" strokeWidth={stroke} fill="none" strokeLinecap="round" />
-            {/* Progress */}
-            <path d={describeArc(cx, cy, radius, startAngle, valueToAngle(currentValue))} stroke="#ffcd61" strokeWidth={stroke} fill="none" strokeLinecap="round" />
-            {/* Handle */}
-            {(() => {
-              const a = valueToAngle(currentValue)
-              const p = polarToCartesian(cx, cy, radius, a)
-              return (
-                <g>
-                  <circle cx={p.x} cy={p.y} r={stroke/1.4} fill="#ffcd61" stroke="rgba(0,0,0,0.25)" strokeWidth="2" />
+        {/* === Arch Slider (replaces straight horizontal slider) === */}
+        <div className="w-full max-w-md mx-auto px-4 mt-19">
+          <div className="w-full flex items-center justify-center select-none">
+            <div className="relative" style={{ width: svgWidth, height: svgHeight }}>
+              <svg
+                ref={svgRef}
+                width={svgWidth}
+                height={svgHeight}
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                className="overflow-visible touch-none"
+                onPointerDown={startDrag}
+                role="slider"
+                tabIndex={0}
+                aria-valuemin={question.min}
+                aria-valuemax={question.max}
+                aria-valuenow={currentValue}
+                aria-label={question.title}
+                onKeyDown={handleKey}
+              >
+                {/* Background arc */}
+                <path
+                  ref={pathRef}
+                  d={`M 0 ${radius} A ${radius} ${radius} 0 0 1 ${radius * 2} ${radius}`}
+                  stroke="rgba(255,205,97,0.25)"  /* amber-200 @ 25% */
+                  strokeWidth={strokeWidth}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+                {/* Progress arc */}
+                <path
+                  d={`M 0 ${radius} A ${radius} ${radius} 0 0 1 ${radius * 2} ${radius}`}
+                  stroke="#ffcd61" /* amber progress */
+                  strokeWidth={strokeWidth}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${progressLength} ${pathLength - progressLength}`}
+                />
+                {/* Center value inside (aligned with background inner circle) */}
+                <text
+                  x={radius}
+                  y={radius}
+                  fill="#ffcd61"
+                  fontSize={24}
+                  fontWeight={700}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  {currentValue}
+                </text>
+                {/* Thumb */}
+                <g transform={`translate(${thumbX},${thumbY})`}>
+                  <circle r={strokeWidth * 0.9} fill="#ffcd61" />
+                  <circle r={strokeWidth * 0.5} fill="white" />
                 </g>
-              )
-            })()}
-          </svg>
+              </svg>
+            </div>
+          </div>
+
+          {/* Hidden native range for accessibility/fallback (kept functional) */}
+          <input
+            type="range"
+            min={question.min}
+            max={question.max}
+            step={question.step}
+            value={currentValue}
+            onChange={handleValueChange}
+            className="sr-only"
+            aria-hidden
+          />
         </div>
 
-        <div className="text-center mt-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-100/20 border border-amber-200/30 rounded-full">
-            <span className="text-2xl font-bold text-[#ffcd61]">{currentValue}</span>
-          </div>
-        </div>
+        {/* Numeric bubble removed; number rendered inside the inner circle */}
       </div>
     </div>
   )
