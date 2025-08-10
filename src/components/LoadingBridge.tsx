@@ -171,11 +171,11 @@ const transformShopifyProduct = (p: any): Product => {
 
         dispatch({ type: 'SET_RANKED', payload: hydrated })
         dispatch({ type: 'SET_HAS_MORE', payload: !!ranking.has_more })
-        dispatch({ type: 'SET_SCREEN', payload: 'results' })
+        dispatch({ type: 'SET_SCREEN', payload: 'card' })
       } catch (err) {
         console.error('buildAndFetchRanking error:', err)
         dispatch({ type: 'SET_ERROR', payload: 'Failed to build recommendations. Please try again.' })
-        dispatch({ type: 'SET_SCREEN', payload: 'results' }) // still proceed so UI renders
+        dispatch({ type: 'SET_SCREEN', payload: 'card' }) // proceed to animation
       } finally {
         dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: false } })
         dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: false } })
