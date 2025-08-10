@@ -1,32 +1,30 @@
-import {useApp} from '../context/AppContext'
-import {QuizScreen} from '../components/QuizScreen'
-import {LoadingBridge} from '../components/LoadingBridge'
-import {ResultsScreen} from '../components/ResultsScreen'
+import { useState } from 'react'
+import { DailyFortuneQuestions } from '../components/DailyFortune/DailyFortuneQuestions'
+import { QUESTIONS } from '../components/DailyFortune/question-data'
+import type { QuestionAnswer } from '../components/DailyFortune/question-types'
 
 export function QuizPage() {
-  const {state} = useApp()
-  return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <div className="bg-white shadow-sm px-4 py-3 pt-safe">
-        <p className="text-center text-xs text-gray-500 uppercase tracking-wide">
-          {state.currentScreen === 'quiz' && 'Step 1: Daily Quiz'}
-          {state.currentScreen === 'loading' && 'Step 2: Finding Products'}
-          {state.currentScreen === 'results' && 'Step 3: Your Collection'}
-        </p>
-        <h1 className="text-center text-xl font-bold text-gray-900 mt-1">Shop Mini Experience</h1>
+  const [completed, setCompleted] = useState(false)
+  const [collectedAnswers, setCollectedAnswers] = useState<QuestionAnswer[]>([])
+
+  const firstThree = QUESTIONS.slice(0, 3)
+
+  if (completed) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Daily Shopping Fortune Ready ✨</h1>
+        <p className="text-gray-600 max-w-md mb-8">Thanks for sharing your vibe. Your personalized experience is being crafted.</p>
+        <pre className="bg-gray-900 text-indigo-200 text-xs p-4 rounded-lg max-w-md w-full overflow-auto text-left">
+{JSON.stringify(collectedAnswers, null, 2)}
+        </pre>
+        <button onClick={() => { setCompleted(false); setCollectedAnswers([]) }} className="mt-8 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg active:scale-95 transition">
+          Retake
+        </button>
       </div>
-      <div className="flex-1 overflow-auto">
-        {state.currentScreen === 'quiz' && <QuizScreen />}
-        {state.currentScreen === 'loading' && <LoadingBridge />}
-        {state.currentScreen === 'results' && <ResultsScreen />}
-      </div>
-      <div className="px-4 py-2 bg-gray-100 border-t border-gray-200">
-        <p className="text-xs text-gray-600 text-center">
-          Current Screen: {state.currentScreen} | Questions: {state.questions.length} | Products: {state.ranked.length}
-        </p>
-      </div>
-    </div>
-  )
+    )
+  }
+
+  return <DailyFortuneQuestions questions={firstThree} onComplete={(ans) => { setCollectedAnswers(ans); setCompleted(true) }} />
 }
 
 export default QuizPage
