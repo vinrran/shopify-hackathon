@@ -128,9 +128,9 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   const handleShuffle = () => { setShuffleCount(c => c + 1); setCurrentIndex(2) }
 
   return (
-    <div className="w-full max-w-lg mx-auto px-1 py-2 overflow-hidden">
+    <div className="w-full max-w-lg mx-auto px-1 py-2 overflow-visible">
       <div className="mb-3 mt-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-1 text-center">My Selections</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-1 text-center">Fortunes</h3>
         <div className="flex justify-center gap-2 px-2">
           {[0,1,2].map(spotIndex => (
             <div key={spotIndex} className={`w-30 rounded-lg transition-all duration-200 ${
@@ -158,10 +158,7 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           ))}
         </div>
       </div>
-      <div className="flex justify-center mt-9 mb-3">
-        <button onClick={handleShuffle} className="bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-15 h-15 rounded-full border border-amber-300/30 shadow-lg transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center" title="Shuffle the cards to reveal new products">🔮</button>
-      </div>
-      <div ref={containerRef} className="relative h-[350px] flex items-end justify-center overflow-visible" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ touchAction: 'pan-y' }}>
+      <div ref={containerRef} className="relative h-[350px] flex items-end justify-center overflow-visible mt-4" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ touchAction: 'pan-y' }}>
         {displayProducts.map((product, index) => {
           const isCenter = index === currentIndex
           return (
@@ -173,6 +170,15 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           )
         })}
       </div>
+      <button
+        onClick={handleShuffle}
+  className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-16 h-16 rounded-full border border-amber-300/30 shadow-xl transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center z-50"
+        title="Shuffle the cards to reveal new products"
+        aria-label="Shuffle products"
+        type="button"
+      >
+        🔮
+      </button>
       <div className="pb-8" />
     </div>
   )
