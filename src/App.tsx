@@ -6,6 +6,7 @@ import {FanCarouselPage} from './pages/FanCarouselPage'
 import {CardLoadingPage} from './pages/CardLoadingPage'
 import {useEffect, useState} from 'react'
 import {AppProvider} from './context/AppContext'
+import { MainFlow } from './components/MainFlow'
 
 export function App() {
   const [route, setRoute] = useState<string>(() => window.location.hash.slice(1) || 'about')
@@ -61,7 +62,7 @@ export function App() {
       <main className="flex-1">
         {route === 'quiz' ? (
           <AppProvider>
-            <QuizPage />
+            <MainFlow />
           </AppProvider>
         ) : (
           <Page />
