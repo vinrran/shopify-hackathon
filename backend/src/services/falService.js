@@ -79,7 +79,7 @@ function parseJsonFromMaybeMarkdown(text) {
 /**
  * Clean and limit an array of query strings.
  */
-function sanitizeQueries(qs, cap = 3) {
+function sanitizeQueries(qs, cap = 6) {
   const dedup = new Set(
     qs
       .map((q) => (typeof q === 'string' ? q : ''))
@@ -107,15 +107,42 @@ export async function generateSearchQueries(userResponses, buyerData = {}) {
     const input = {
       system_prompt: `You are an e-commerce search query generator.
 
+You are an e-commerce search query generator.
+
 Output policy:
 - Return JSON ONLY.
-- The top-level value MUST be a JSON array of 6 strings.
-- Do NOT include code fences or any prose.
-- Each query should be 8-10 words, broad, and searchable.
-- Each query should be unique.
-- Consider the user's responses, mood, and buyer preferences.
-- Only search for clothes in the right gender based on gender affinity.
-- Use buyer attributes to personalize queries (age, location, style preferences, etc.).`,
+- The top-level value MUST be a JSON array of exactly 6 strings.
+- Do NOT include code fences, keys, timestamps, or prose.
+
+Category scope:
+- You are NOT limited to clothing. You may choose categories from ANY retail department (apparel, beauty, home, kitchen, lighting, pets, office, electronics accessories, etc.).
+- Aim for diversity across departments when the user's preferences are broad. If the user intent is clearly fashion-only, apparel-only is acceptable.
+
+Generation rules:
+- Each of the 6 queries MUST target a DIFFERENT product category (no duplicates or synonyms).
+- Include the category keyword in each query exactly once.
+- Word count per query: 8–10 words.
+- Queries must be broad and searchable (no SKUs, no brand names).
+- Apply gender affinity ONLY to apparel/footwear/accessories queries; ignore it for non-apparel categories.
+- Avoid repeating the same adjective more than twice overall.
+
+Personalization using Buyer Attributes (Shopify Minis useBuyerAttributes taxonomy):
+- Use the shopper’s historical categories/brands/price bands to guide category selection toward RELATED or COMPLEMENTARY items rather than exact repeats.
+- At most ONE query may directly target the shopper’s dominant historical category; the remaining queries should be adjacent (e.g., if history is “running shoes,” consider “performance socks,” “gym shorts,” “lightweight windbreakers,” or “fitness earbuds”).
+- Keep tone (quality/price adjectives) consistent with typical spend/brands when appropriate.
+
+Personalization using TODAY’S QUIZ ANSWERS:
+- Use the user’s current answers (mood, occasion, color/style, budget, etc.) to shape both the chosen categories and the adjectives in the queries.
+- Prefer categories that naturally fit the stated occasion, season, or mood (e.g., “cozy” → sweaters/blankets/candles; “work setup upgrade” → lamps/desk organizers/keyboard).
+- If a quiz answer strongly emphasizes a theme, you may include ONE direct category for that theme and keep the other queries related-but-different (complementary) to avoid redundancy.
+
+Tie-breaking & consistency:
+- When buyer history and today’s answers conflict, prioritize TODAY’S answers and use history to choose adjacent categories, not identical repeats.
+- Maintain cross-department variety when the answers are broad; if the intent is clearly focused on one department, stay within that department but still use different categories.
+
+Quality check (before output):
+- Ensure exactly 6 strings, each a unique category, all 8–10 words, and JSON array only.
+      `,
       prompt: JSON.stringify({
         today_responses: userResponses,
         buyer_attributes: buyerAttributes || {},
@@ -150,7 +177,7 @@ Output policy:
         .map((l) => l.replace(/^\d+\)\s*|^-\s*|^["']|["']$/g, '').trim());
     }
 
-    queries = sanitizeQueries(queries, 3);
+    queries = sanitizeQueries(queries, 6);
     logger.info(`Generated ${queries.length} search queries:`, queries);
     return queries;
   } catch (error) {
@@ -236,44 +263,71 @@ export async function processImagesVisionBatch(imageUrls, maxConcurrency = 8) {
  */
 export async function rankProducts({
   todayResponses,
-  todayQueries,
+  todayQueries, // Keep for backward compatibility but don't use
   pastDays,
   products,
   excludeProductIds = []
 }) {
   try {
-    logger.info('Ranking products with Fal.ai');
+    logger.info('Ranking products with user inputs and vision data');
 
     const result = await fal.subscribe('fal-ai/any-llm/enterprise', {
       input: {
-        system_prompt: `You are a personalized ecommerce ranking model.
+        system_prompt: `
+        You are a personalized ecommerce ranking AI that analyzes user preferences and product visual attributes to create highly relevant recommendations.
 
-Return EXACTLY 20 items as a JSON array of:
-[
-  { "product_id": "string", "score": number (0..1), "reason": "string" }
-]
+Scope & neutrality:
+- You are NOT limited to clothing. Treat all product categories equally (apparel, beauty, home, pets, kitchen, electronics accessories, etc.).
+- Do not favor or penalize any category type during scoring.
+
+Task:
+1) Score EVERY candidate product on a 0–1 scale for relevance using:
+   • USER QUIZ RESPONSES (style, preferences, budget, occasions)
+   • PRODUCT VISION DATA (image-derived tags/attributes/captions)
+   • PRODUCT METADATA (title, price, vendor, etc.)
+   • PAST CONTEXT (recent days of user inputs/queries)
+2) Exclude any product IDs provided in "exclude_product_ids".
+3) Select the 20 highest-scoring UNIQUE products.
+4) IMPORTANT: RANDOMIZE the PRESENTATION ORDER of those 20 so similar item types are not grouped. 
+   - After selecting the top 20 by score, shuffle them.
+   - Aim to avoid showing more than two adjacent items of the same category when possible.
+   - Do NOT sort by score or category after shuffling.
 
 Output policy:
-- JSON ONLY. No prose, no code fences.
-- Exclude any products whose IDs are provided in "exclude_product_ids".`,
+- Return JSON ONLY: an array of EXACTLY 20 objects in the (shuffled) order.
+- Each object must be: { "product_id": "string", "score": number (0..1), "reason": "string" }.
+- Keep "reason" concise (≤ 18 words) and grounded in user inputs and visual attributes.
+- No code fences, no prose, no extra fields or metadata.
+
+Notes:
+- Selection is driven by score; randomness applies ONLY to the final display order.
+- If multiple items have near-identical scores, still include the most relevant ones and rely on the shuffle for variety.
+
+        `,
         prompt: JSON.stringify({
-          today_responses: todayResponses,
-          today_queries: todayQueries,
-          past_5_days: pastDays,
-          products,
+          user_responses: todayResponses,
+          past_context: pastDays,
+          products_with_vision: products,
           exclude_product_ids: excludeProductIds
         })
       }
     });
 
     const text = extractFalText(result);
+    logger.info('Raw ranking response text:', text.slice(0, 500) + '...');
     let rankedProducts = [];
 
     try {
       const parsed = parseJsonFromMaybeMarkdown(text);
+      logger.info('Parsed ranking response:', JSON.stringify(parsed, null, 2).slice(0, 300) + '...');
       rankedProducts = Array.isArray(parsed) ? parsed : parsed?.items ?? [];
+      
+      if (rankedProducts.length === 0) {
+        logger.warn('Ranking response parsed but no products found, parsed structure:', Object.keys(parsed || {}));
+      }
     } catch (e) {
       logger.error('Failed to parse ranking response, using fallback 20:', e?.message || e);
+      logger.error('Raw text that failed to parse:', text.slice(0, 200));
       rankedProducts = products.slice(0, 20).map((p, i) => ({
         product_id: p.product_id,
         score: Math.max(0, 1 - i / 20),

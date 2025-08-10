@@ -178,4 +178,23 @@ export const api = {
       }),
     })
   },
+
+  // Process product images with vision AI
+  async processProductVision(
+    userId: string,
+    responseDate: string,
+    products: Product[]
+  ): Promise<{ processed: number }> {
+    return apiCall('/vision/process', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        response_date: responseDate,
+        products: products.map(p => ({
+          product_id: p.product_id,
+          image_url: p.thumbnail_url || p.images?.[0]
+        })).filter(p => p.image_url)
+      }),
+    })
+  },
 }
