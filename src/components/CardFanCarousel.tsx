@@ -1,12 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { ProductCard } from '@shopify/shop-minis-react'
+import { SimpleShareScreen } from './SimpleShareScreen'
+import type { QuestionAnswer } from './DailyFortune/question-types'
 
 export interface CardFanCarouselProps {
   products?: any[]
   loading?: boolean
+  answers?: QuestionAnswer[]
 }
 
-export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, loading }) => {
+export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, loading, answers = [] }) => {
+  // Create sample answers if none provided (for testing/demo purposes)
+  const sampleAnswers: QuestionAnswer[] = [
+    { questionId: 'mood-emoji', value: 'sparkles' },
+    { questionId: 'energy-level', value: 75 },
+    { questionId: 'current-season-feel', value: 'spring' }
+  ]
+  const displayAnswers = answers.length > 0 ? answers : sampleAnswers
   const [currentIndex, setCurrentIndex] = useState(2)
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
@@ -19,6 +29,7 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   const [isDragActive, setIsDragActive] = useState(false)
   const [usedProductIds, setUsedProductIds] = useState<Set<string>>(new Set())
   const [shuffleCount, setShuffleCount] = useState(0)
+  const [showShareScreen, setShowShareScreen] = useState(false)
 
   if (loading || !products || products.length === 0) {
     return (
@@ -170,16 +181,39 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           )
         })}
       </div>
-      <button
-        onClick={handleShuffle}
-  className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-16 h-16 rounded-full border border-amber-300/30 shadow-xl transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center z-50"
-        title="Shuffle the cards to reveal new products"
-        aria-label="Shuffle products"
-        type="button"
-      >
-        🔮
-      </button>
+      {/* Action buttons */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-50">
+        <button
+          onClick={handleShuffle}
+          className="bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-16 h-16 rounded-full border border-amber-300/30 shadow-xl transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center"
+          title="Shuffle the cards to reveal new products"
+          aria-label="Shuffle products"
+          type="button"
+        >
+          🔮
+        </button>
+        
+        <button
+          onClick={() => setShowShareScreen(true)}
+          className="bg-gradient-to-b from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-16 h-16 rounded-full border border-purple-300/30 shadow-xl transition-all duration-300 hover:shadow-purple-200/20 hover:border-purple-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center"
+          title="Share your fortune"
+          aria-label="Share fortune"
+          type="button"
+        >
+          📤
+        </button>
+      </div>
+      
       <div className="pb-8" />
+      
+      {/* Share Screen Modal */}
+      {showShareScreen && (
+        <SimpleShareScreen
+          answers={displayAnswers}
+          selectedProducts={topSpots.filter(Boolean).length > 0 ? topSpots.filter(Boolean) : displayProducts.slice(0, 3)}
+          onClose={() => setShowShareScreen(false)}
+        />
+      )}
     </div>
   )
 }
