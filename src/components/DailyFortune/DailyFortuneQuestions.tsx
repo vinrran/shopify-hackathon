@@ -17,7 +17,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const currentQuestion = localQuestions[currentQuestionIndex]
-  const progress = ((currentQuestionIndex + 1) / localQuestions.length) * 100
+  // Progress bar removed per design; we still show question count
 
   const getCurrentAnswer = () => {
     return answers.find((a) => a.questionId === currentQuestion.id)?.value
@@ -127,12 +127,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
               <p className="text-sm text-gray-500 text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          {/* Progress bar removed */}
         </div>
       </div>
 
