@@ -130,7 +130,16 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   return (
     <div className="w-full max-w-lg mx-auto px-1 pt-12 pb-2 overflow-visible">
       <div className="mb-3">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Fortunes</h3>
+        <h3
+          className="mb-4 text-center"
+          style={{
+            fontFamily: 'Castoro Titling, serif',
+            fontWeight: 400,
+            fontSize: '22px',
+            letterSpacing: '0.6px', // 3% of 20px
+            color: '#C8C0FF'
+          }}
+        >FORTUNES</h3>
         <div className="flex justify-center gap-2 px-2">
           {[0,1,2].map(spotIndex => (
             <div key={spotIndex} className={`w-30 rounded-lg transition-all duration-200 ${
