@@ -7,6 +7,7 @@ import type { Product } from '../types'
 
 import InfiniteSlider from '../components/InfiniteSlider'
 import LoadingImagesSlider from '../components/LoadingImagesSlider'
+import bg from '../components/background.svg'
 
 /**
  * SliderPage (Shop Mini)
@@ -204,14 +205,22 @@ export function SliderPage() {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col px-4 py-6 bg-[linear-gradient(to_bottom,#1A0051_0%,#3A00B7_50%,#1A0051_100%)]">
-      {/* Top image slider */}
-      <div className="flex-shrink-0 pb-4">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Top image slider - true full bleed */}
+      <div className="flex-shrink-0 pb-4 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
         <LoadingImagesSlider images={loadingImages} direction="right" />
       </div>
 
       {/* Center content (text marquees) */}
-      <div className="flex-1 flex flex-col justify-center gap-4">
+      <div className="flex-1 flex flex-col justify-center gap-4 px-4">
         <InfiniteSlider
           durationSeconds={50}
           gap={36}
@@ -239,8 +248,8 @@ export function SliderPage() {
         </InfiniteSlider>
       </div>
 
-      {/* Bottom image slider */}
-      <div className="flex-shrink-0 pt-4 pb-20">
+      {/* Bottom image slider - true full bleed */}
+      <div className="flex-shrink-0 pt-4 pb-20 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
         <LoadingImagesSlider images={loadingImages} direction="left" />
       </div>
 

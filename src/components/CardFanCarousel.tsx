@@ -129,8 +129,8 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
 
   return (
     <div className="w-full max-w-lg mx-auto px-1 py-2 overflow-visible">
+      {/* Header removed; page controls the 'Fortunes' title */}
       <div className="mb-3 mt-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-1 text-center">Fortunes</h3>
         <div className="flex justify-center gap-2 px-2">
           {[0,1,2].map(spotIndex => (
             <div key={spotIndex} className={`w-30 rounded-lg transition-all duration-200 ${
@@ -172,7 +172,7 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
       </div>
       <button
         onClick={handleShuffle}
-  className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-16 h-16 rounded-full border border-amber-300/30 shadow-xl transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center z-50"
+        className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 text-amber-100 w-20 h-20 rounded-full border border-amber-300/30 shadow-xl transition-all duration-300 hover:shadow-amber-200/20 hover:border-amber-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center z-50 text-2xl"
         title="Shuffle the cards to reveal new products"
         aria-label="Shuffle products"
         type="button"
