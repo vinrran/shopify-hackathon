@@ -34,5 +34,10 @@
   align-items: center;
 }
 
+/* Stagger helper: start halfway through cycle */
+.infinite-slider--delay-half .infinite-slider__track {
+  animation-delay: calc(var(--duration, 30s) / -2);
+}
+
 /* Optional utility for debugging layout */
 .infinite-slider--debug .infinite-slider__item { outline: 1px dashed #e2e8f0; }
