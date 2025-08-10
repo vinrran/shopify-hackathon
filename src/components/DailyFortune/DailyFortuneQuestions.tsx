@@ -1,4 +1,5 @@
 import { useState } from "react"
+import bg from '../sliderbg2.svg'
 import { QUESTIONS } from "./question-data"
 import type { QuestionAnswer, Question } from "./question-types"
 import { SliderQuestionComponent } from "./SliderQuestion"
@@ -106,33 +107,27 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundImage: `url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      }}
+    >
       {/* Header */}
-      <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-gray-200/50 z-10">
-        <div className="max-w-md mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-full">
-              <h1
-                className="font-normal"
-                style={{
-                  fontFamily: '"Castoro Titling", serif',
-                  fontSize: 20,
-                  letterSpacing: '0.03em',
-                  textAlign: 'center',
-                  color: '#ffcd61',
-                }}
-              >
-                Daily Shopping Fortune
-              </h1>
-              <p className="text-sm text-gray-500 text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
-            </div>
+      <div className="sticky top-0 bg-[#1A0051] z-10">
+        <div className="max-w-md mx-auto px-6 py-3">
+          <div className="flex items-center justify-center">
+            <p className="text-sm text-white text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
           </div>
-          {/* Progress bar removed */}
+          {/* Progress bar and title removed */}
         </div>
       </div>
 
       {/* Question Content */}
-      <div className="max-w-md mx-auto px-2 py-8">
+      <div className="max-w-md mx-auto px-2 py-4">
         <div
           className={`transition-all duration-300 ease-in-out ${
             isTransitioning 
@@ -145,7 +140,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
       </div>
 
       {/* Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200/50 safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1A0051] safe-area-inset-bottom">
         <div className="max-w-md mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <button
