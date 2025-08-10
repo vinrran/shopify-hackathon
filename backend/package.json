@@ -1,0 +1,26 @@
+{
+  "name": "shopify-mini-backend",
+  "version": "1.0.0",
+  "description": "Backend for Shopify Shop Mini with SQLite and Fal.ai",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "sqlite": "^5.1.1",
+    "@fal-ai/client": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "p-limit": "^5.0.0",
+    "joi": "^17.11.0",
+    "express-rate-limit": "^7.1.5",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5"
+  }
+}
