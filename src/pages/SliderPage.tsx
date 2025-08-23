@@ -1,9 +1,9 @@
 // src/pages/SliderPage.tsx
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useProductSearch, useRecommendedProducts } from '@shopify/shop-minis-react'
 import { useApp } from '../context/AppContext'
 import { api } from '../services/api'
-import type { Product } from '../types'
+import type { Product, RankedProduct } from '../types'
 
 import InfiniteSlider from '../components/InfiniteSlider'
 import LoadingImagesSlider from '../components/LoadingImagesSlider'
@@ -49,76 +49,28 @@ export function SliderPage() {
   const dedupeById = (list: Product[]) => {
     const seen = new Set<string>()
     return list.filter((p: any) => {
-      const id = p?.product_id || p?.id
-      if (!id) return false
-      if (seen.has(id)) return false
-      seen.add(id)
-      return true
+      const id = p?.product_id || p?.id; if (!id || seen.has(id)) return false; seen.add(id); return true
     })
   }
-
   const toMapById = (list: Product[]) => {
-    const map = new Map<string, Product>()
-    for (const p of list) {
-      const id = (p as any)?.product_id || (p as any)?.id
-      if (id) map.set(id, p)
-    }
-    return map
+    const m = new Map<string, Product>(); list.forEach(p => { const id = (p as any)?.product_id || (p as any)?.id; if (id) m.set(id, p) }); return m
   }
-
-  // same transform as before
   const transformShopifyProduct = (p: any): Product => {
-    const image =
-      p?.featuredImage?.url ??
-      p?.images?.edges?.[0]?.node?.url ??
-      p?.images?.[0]?.url ??
-      p?.images?.[0] ??
-      ''
-
-    const priceAmount =
-      p?.priceRange?.minVariantPrice?.amount ??
-      p?.priceRangeV2?.minVariantPrice?.amount ??
-      p?.minPrice ??
-      p?.price?.amount ??
-      p?.variants?.[0]?.price?.amount ??
-      p?.variants?.edges?.[0]?.node?.price?.amount ??
-      null
-
-    const currencyCode =
-      p?.priceRange?.minVariantPrice?.currencyCode ??
-      p?.priceRangeV2?.minVariantPrice?.currencyCode ??
-      p?.currency ??
-      p?.price?.currencyCode ??
-      p?.variants?.[0]?.price?.currencyCode ??
-      p?.variants?.edges?.[0]?.node?.price?.currencyCode ??
-      'USD'
-
-    const vendor =
-      p?.vendor ??
-      p?.vendorName ??
-      p?.brand ??
-      p?.merchant?.name ??
-      p?.store?.name ??
-      'Unknown'
-
-    const url =
-      p?.onlineStoreUrl ??
-      p?.url ??
-      p?.webUrl ??
-      (p?.handle && p?.store?.domain ? `https://${p.store.domain}/products/${p.handle}` : '')
-
+    const image = p?.featuredImage?.url || p?.images?.edges?.[0]?.node?.url || p?.images?.[0]?.url || p?.images?.[0] || ''
+    const priceAmount = p?.priceRange?.minVariantPrice?.amount || p?.priceRangeV2?.minVariantPrice?.amount || p?.minPrice || p?.price?.amount || p?.variants?.[0]?.price?.amount || p?.variants?.edges?.[0]?.node?.price?.amount || '0'
+    const currencyCode = p?.priceRange?.minVariantPrice?.currencyCode || p?.priceRangeV2?.minVariantPrice?.currencyCode || p?.currency || p?.price?.currencyCode || p?.variants?.[0]?.price?.currencyCode || p?.variants?.edges?.[0]?.node?.price?.currencyCode || 'USD'
+    const vendor = p?.vendor || p?.vendorName || p?.brand || p?.merchant?.name || p?.store?.name || 'Unknown'
+    const url = p?.onlineStoreUrl || p?.url || p?.webUrl || (p?.handle && p?.store?.domain ? `https://${p.store.domain}/products/${p.handle}` : '')
     return {
-      product_id: p?.id ?? p?.product_id ?? '',
-      title: p?.title ?? p?.name ?? '',
+      product_id: p?.id || p?.product_id || '',
+      title: p?.title || p?.name || '',
       vendor,
-      price: priceAmount ?? undefined,
+      price: String(priceAmount),
       currency: currencyCode,
       url: url || undefined,
       thumbnail_url: image || undefined,
-      images:
-        p?.images?.edges?.map((e: any) => e.node?.url).filter(Boolean) ??
-        (Array.isArray(p?.images) ? p.images : []),
-      raw: p,
+      images: (p?.images?.edges?.map((e: any) => e.node?.url).filter(Boolean)) || (Array.isArray(p?.images) ? p.images : []),
+      raw: p
     }
   }
 
@@ -172,11 +124,16 @@ export function SliderPage() {
         const ranking = await api.getRanking(state.userId, state.today, 50, 0)
 
         const cache = toMapById(accumulated)
-        const hydrated = (ranking.top || []).map((r: any) => {
+        const hydrated: RankedProduct[] = (ranking.top || []).map((r: any, i: number) => {
           const full = cache.get(r.product_id)
-          return full
-            ? { ...full, score: r.score, reason: r.reason }
-            : { product_id: r.product_id, score: r.score, reason: r.reason }
+          const base: Product = full ? full : {
+            product_id: r.product_id,
+            title: '',
+            vendor: 'Unknown',
+            price: '0',
+            currency: 'USD'
+          }
+          return { ...base, rank: r.rank ?? i + 1, score: r.score, reason: r.reason }
         })
 
         dispatch({ type: 'SET_RANKED', payload: hydrated })
@@ -220,7 +177,7 @@ export function SliderPage() {
       </div>
 
       {/* Center content (text marquees) */}
-      <div className="flex-1 flex flex-col justify-center gap-4 px-4">
+      <div className="flex-1 flex flex-col justify-center gap-4 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
         <InfiniteSlider
           durationSeconds={50}
           gap={36}
