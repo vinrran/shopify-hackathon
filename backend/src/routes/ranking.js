@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import { getMemoryDb } from '../memory.js';
 import { rankProducts } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -17,59 +17,46 @@ router.post('/build', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
     // Get today's responses
-    const todayResponses = await db.all(
-      `SELECT ur.*, q.prompt
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? AND ur.response_date = ?`,
-      [user_id, response_date]
-    );
+    const userResponses = await memoryDb.getUserResponses(user_id, response_date);
     
-    // Format today's responses
+    // Format today's responses - need to join with questions
     const formattedTodayResponses = {};
-    for (const r of todayResponses) {
-      const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
-      formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
+    for (const response of userResponses) {
+      const question = await memoryDb.getQuestion(response.qid);
+      if (question) {
+        const prompt = question.prompt.toLowerCase().replace(/\s+/g, '_');
+        formattedTodayResponses[prompt] = response.answer;
+      }
     }
 
+    // Get products and vision data
+    const products = await memoryDb.getAllProducts(user_id, response_date);
+    const visionData = await memoryDb.getProductVisionData(user_id, response_date);
     
-    // Get products with vision data
-    const products = await db.all(
-      `SELECT DISTINCT 
-         p.product_id,
-         p.title,
-         p.vendor,
-         p.price,
-         p.currency,
-         p.url,
-         p.thumbnail_url,
-         pvd.caption,
-         pvd.tags_json,
-         pvd.attributes_json
-       FROM products p
-       LEFT JOIN product_vision_data pvd 
-         ON p.user_id = pvd.user_id 
-         AND p.response_date = pvd.response_date 
-         AND p.product_id = pvd.product_id
-       WHERE p.user_id = ? AND p.response_date = ?`,
-      [user_id, response_date]
-    );
+    // Create a map of vision data by product_id
+    const visionByProduct = new Map();
+    visionData.forEach(v => {
+      visionByProduct.set(v.product_id, v);
+    });
     
     // Format products for ranking
-    const formattedProducts = products.map(p => ({
-      product_id: p.product_id,
-      title: p.title,
-      vendor: p.vendor,
-      price: p.price,
-      currency: p.currency,
-      url: p.url,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
-    }));
+    const formattedProducts = products.map(p => {
+      const vision = visionByProduct.get(p.product_id) || {};
+      return {
+        product_id: p.product_id,
+        title: p.title,
+        vendor: p.vendor,
+        price: p.price,
+        currency: p.currency,
+        url: p.url,
+        tags: vision.tags || [],
+        caption: vision.caption || '',
+        attributes: vision.attributes || {}
+      };
+    });
     
 
     
@@ -80,30 +67,8 @@ router.post('/build', async (req, res) => {
       products: formattedProducts
     });
     
-    // Clear existing rankings for this date
-    await db.run(
-      'DELETE FROM ranked_products WHERE user_id = ? AND response_date = ?',
-      [user_id, response_date]
-    );
-    
-    // Store new rankings
-    for (let i = 0; i < rankedProducts.length; i++) {
-      const ranked = rankedProducts[i];
-      await db.run(
-        `INSERT INTO ranked_products 
-         (user_id, response_date, rank, product_id, score, reason, context_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          user_id,
-          response_date,
-          i + 1,
-          ranked.product_id,
-          ranked.score,
-          ranked.reason,
-          1
-        ]
-      );
-    }
+    // Store new rankings in memory (this automatically clears existing ones)
+    await memoryDb.saveRankedProducts(user_id, response_date, rankedProducts, 1);
     
     logger.info(`Built ranking of ${rankedProducts.length} products for user ${user_id}`);
     
@@ -133,39 +98,39 @@ router.get('/', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
-    // Get latest context version
-    const maxVersion = await db.get(
-      `SELECT MAX(context_version) as max_version 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
+    // Get ranked products (always use context version 1 for simplicity)
+    const rankings = await memoryDb.getRankedProducts(user_id, response_date, 1);
     
-    const contextVersion = maxVersion?.max_version || 1;
+    // Get all products to join with rankings
+    const allProducts = await memoryDb.getAllProducts(user_id, response_date);
+    const productMap = new Map(allProducts.map(p => [p.product_id, p]));
     
-    // Get ranked products with pagination
-    const rankedProducts = await db.all(
-      `SELECT rp.*, p.title, p.vendor, p.price, p.currency, p.url, p.thumbnail_url
-       FROM ranked_products rp
-       JOIN products p ON rp.product_id = p.product_id 
-         AND rp.user_id = p.user_id 
-         AND rp.response_date = p.response_date
-       WHERE rp.user_id = ? 
-         AND rp.response_date = ?
-         AND rp.context_version = ?
-       ORDER BY rp.rank
-       LIMIT ? OFFSET ?`,
-      [user_id, response_date, contextVersion, limit, offset]
-    );
+    // Apply pagination and join with product data
+    const startIndex = parseInt(offset);
+    const endIndex = startIndex + parseInt(limit);
+    const paginatedRankings = rankings.slice(startIndex, endIndex);
+    
+    const rankedProducts = paginatedRankings.map(ranking => {
+      const product = productMap.get(ranking.product_id) || {};
+      return {
+        ...ranking,
+        title: product.title,
+        vendor: product.vendor,
+        price: product.price,
+        currency: product.currency,
+        url: product.url,
+        thumbnail_url: product.thumbnail_url
+      };
+    });
     
     res.json({
       products: rankedProducts,
-      total: rankedProducts.length,
+      total: rankings.length,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      context_version: contextVersion
+      context_version: 1
     });
   } catch (error) {
     logger.error('Failed to get ranking:', error);
@@ -185,115 +150,68 @@ router.post('/replenish', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
-    // Get current max context version
-    const maxVersion = await db.get(
-      `SELECT MAX(context_version) as max_version 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
+    // Get next context version (increment from current max)
+    const existingRankings = await memoryDb.getRankedProducts(user_id, response_date, 1);
+    const nextVersion = 2; // Simple increment for replenish
     
-    const nextVersion = (maxVersion?.max_version || 0) + 1;
+    // Get all products and filter out excluded ones
+    const allProducts = await memoryDb.getAllProducts(user_id, response_date);
+    const visionData = await memoryDb.getProductVisionData(user_id, response_date);
     
-    // Get all products except excluded ones
-    const placeholders = exclude_product_ids.map(() => '?').join(',');
-    const products = await db.all(
-      `SELECT DISTINCT 
-         p.product_id,
-         p.title,
-         p.vendor,
-         p.price,
-         p.currency,
-         p.url,
-         p.thumbnail_url,
-         pvd.caption,
-         pvd.tags_json,
-         pvd.attributes_json
-       FROM products p
-       LEFT JOIN product_vision_data pvd 
-         ON p.user_id = pvd.user_id 
-         AND p.response_date = pvd.response_date 
-         AND p.product_id = pvd.product_id
-       WHERE p.user_id = ? 
-         AND p.response_date = ?
-         AND p.product_id NOT IN (${placeholders})`,
-      [user_id, response_date, ...exclude_product_ids]
-    );
+    // Create vision map
+    const visionByProduct = new Map();
+    visionData.forEach(v => {
+      visionByProduct.set(v.product_id, v);
+    });
+    
+    // Filter products excluding the ones already seen
+    const excludeSet = new Set(exclude_product_ids);
+    const products = allProducts.filter(p => !excludeSet.has(p.product_id));
     
     if (products.length === 0) {
       return res.json({ added: 0 });
     }
     
-    // Get context data for ranking
-    const todayResponses = await db.all(
-      `SELECT ur.*, q.prompt
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? AND ur.response_date = ?`,
-      [user_id, response_date]
-    );
-    
+    // Get context data for ranking - format responses
     const formattedTodayResponses = {};
-    for (const r of todayResponses) {
-      const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
-      formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
+    for (const response of userResponses) {
+      const question = await memoryDb.getQuestion(response.qid);
+      if (question) {
+        const prompt = question.prompt.toLowerCase().replace(/\s+/g, '_');
+        formattedTodayResponses[prompt] = response.answer;
+      }
     }
     
-    const todayQueries = await db.all(
-      `SELECT query FROM search_queries 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
+    // Get search queries
+    const searchQueries = await memoryDb.getSearchQueries(user_id, response_date);
     
-    // Format products
-    const formattedProducts = products.map(p => ({
-      product_id: p.product_id,
-      title: p.title,
-      vendor: p.vendor,
-      price: p.price,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
-    }));
+    // Format products with vision data
+    const formattedProducts = products.map(p => {
+      const vision = visionByProduct.get(p.product_id) || {};
+      return {
+        product_id: p.product_id,
+        title: p.title,
+        vendor: p.vendor,
+        price: p.price,
+        tags: vision.tags || [],
+        caption: vision.caption || '',
+        attributes: vision.attributes || {}
+      };
+    });
     
     // Get new ranking with negative context
     const rankedProducts = await rankProducts({
       todayResponses: formattedTodayResponses,
-      todayQueries: todayQueries.map(q => q.query),
+      todayQueries: searchQueries.map(q => q.query),
       pastDays: { responses: [], queries: [] },
       products: formattedProducts,
       excludeProductIds: exclude_product_ids
     });
     
     // Store new rankings with incremented version
-    let startRank = await db.get(
-      `SELECT MAX(rank) as max_rank 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ? AND context_version = ?`,
-      [user_id, response_date, nextVersion - 1]
-    );
-    
-    const baseRank = (startRank?.max_rank || 0) + 1;
-    
-    for (let i = 0; i < rankedProducts.length; i++) {
-      const ranked = rankedProducts[i];
-      await db.run(
-        `INSERT INTO ranked_products 
-         (user_id, response_date, rank, product_id, score, reason, context_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          user_id,
-          response_date,
-          baseRank + i,
-          ranked.product_id,
-          ranked.score,
-          ranked.reason,
-          nextVersion
-        ]
-      );
-    }
+    await memoryDb.saveRankedProducts(user_id, response_date, rankedProducts, nextVersion);
     
     logger.info(`Added ${rankedProducts.length} new products to ranking for user ${user_id}`);
     res.json({ added: rankedProducts.length });

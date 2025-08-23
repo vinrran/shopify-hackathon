@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import { getMemoryDb } from '../memory.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -16,25 +16,23 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
     // Ensure user exists
-    await db.run(
-      'INSERT OR IGNORE INTO users (id) VALUES (?)',
-      [user_id]
-    );
+    let user = await memoryDb.getUser(user_id);
+    if (!user) {
+      user = await memoryDb.createUser(user_id);
+    }
     
-    // Store each response (idempotent with REPLACE)
+    // Store each response (idempotent behavior)
     for (const answer of answers) {
       const { qid, answer: userAnswer } = answer;
-      const answerJson = JSON.stringify(userAnswer);
       
-      await db.run(
-        `INSERT OR REPLACE INTO user_responses 
-         (user_id, response_date, qid, answer_json) 
-         VALUES (?, ?, ?, ?)`,
-        [user_id, response_date, qid, answerJson]
-      );
+      // Check if response already exists (for idempotency)
+      const exists = await memoryDb.getUserResponseExists(user_id, response_date, qid);
+      if (!exists) {
+        await memoryDb.saveUserResponse(user_id, response_date, qid, userAnswer);
+      }
     }
     
     logger.info(`Stored ${answers.length} responses for user ${user_id} on ${response_date}`);

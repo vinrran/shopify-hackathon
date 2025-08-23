@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import { getMemoryDb } from '../memory.js';
 import { processImagesVisionBatch } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -17,22 +17,17 @@ router.post('/run', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
-    // Get unprocessed images
-    const unprocessedImages = await db.all(
-      `SELECT DISTINCT pi.product_id, pi.image_url
-       FROM product_images pi
-       LEFT JOIN product_vision_data pvd 
-         ON pi.user_id = pvd.user_id 
-         AND pi.response_date = pvd.response_date 
-         AND pi.product_id = pvd.product_id
-         AND pi.image_url = pvd.image_url
-       WHERE pi.user_id = ? 
-         AND pi.response_date = ?
-         AND pvd.id IS NULL`,
-      [user_id, response_date]
-    );
+    // Get all product images for this user/date
+    const allImages = await memoryDb.getProductImages(user_id, response_date);
+    
+    // Get existing vision data
+    const existingVisionData = await memoryDb.getProductVisionData(user_id, response_date);
+    const processedUrls = new Set(existingVisionData.map(v => v.image_url));
+    
+    // Filter unprocessed images
+    const unprocessedImages = allImages.filter(img => !processedUrls.has(img.image_url));
     
     if (unprocessedImages.length === 0) {
       return res.json({ ok: true, queued: 0 });
@@ -54,20 +49,12 @@ router.post('/run', async (req, res) => {
       
       if (visionData) {
         try {
-          await db.run(
-            `INSERT INTO product_vision_data 
-             (user_id, response_date, product_id, image_url, caption, tags_json, attributes_json, raw_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              user_id,
-              response_date,
-              image.product_id,
-              image.image_url,
-              visionData.caption,
-              JSON.stringify(visionData.tags || []),
-              JSON.stringify(visionData.attributes || {}),
-              visionData.raw_json
-            ]
+          await memoryDb.saveProductVisionData(
+            user_id, 
+            response_date, 
+            image.product_id, 
+            image.image_url, 
+            visionData
           );
         } catch (error) {
           logger.error(`Failed to store vision data for ${image.image_url}:`, error);
@@ -96,21 +83,18 @@ router.post('/process', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
+    
+    // Get existing vision data to check what's already processed
+    const existingVisionData = await memoryDb.getProductVisionData(user_id, response_date);
+    const processedProductIds = new Set(existingVisionData.map(v => v.product_id));
     
     // First, collect all unprocessed products
     const unprocessedProducts = [];
     for (const product of products) {
       if (!product.product_id || !product.image_url) continue;
       
-      // Check if already processed
-      const existing = await db.get(
-        `SELECT id FROM product_vision_data 
-         WHERE user_id = ? AND response_date = ? AND product_id = ?`,
-        [user_id, response_date, product.product_id]
-      );
-      
-      if (!existing) {
+      if (!processedProductIds.has(product.product_id)) {
         unprocessedProducts.push(product);
       }
     }
@@ -133,22 +117,14 @@ router.post('/process', async (req, res) => {
       const product = unprocessedProducts[i];
       const visionData = visionResults[i];
       
-      if (visionData) {
+      if (visionData && visionData.caption) {
         try {
-          await db.run(
-            `INSERT OR REPLACE INTO product_vision_data 
-             (user_id, response_date, product_id, image_url, caption, tags_json, attributes_json, raw_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              user_id,
-              response_date,
-              product.product_id,
-              product.image_url,
-              visionData.caption || '',
-              JSON.stringify(visionData.tags || []),
-              JSON.stringify(visionData.attributes || {}),
-              visionData.raw_json || '{}'
-            ]
+          await memoryDb.saveProductVisionData(
+            user_id,
+            response_date,
+            product.product_id,
+            product.image_url,
+            visionData
           );
           processed++;
         } catch (error) {
