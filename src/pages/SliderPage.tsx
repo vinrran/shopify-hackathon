@@ -19,7 +19,8 @@ import bg from '../components/background.svg'
  * UI: Slider-based loading screen (top + bottom image sliders, center text marquees).
  * Hooks and API calls remain exactly the same as before.
  */
-export function SliderPage() {
+interface SliderPageProps { surroundGap?: number }
+export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
   const { state, dispatch } = useApp()
   const [phase, setPhase] = useState<'search' | 'recommended' | 'ranking'>('search')
   const [qIndex, setQIndex] = useState(0)
@@ -163,7 +164,7 @@ export function SliderPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="min-h-screen relative"
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
@@ -171,59 +172,54 @@ export function SliderPage() {
         backgroundPosition: 'center',
       }}
     >
-      {/* Top image slider - true full bleed */}
-      <div className="flex-shrink-0 pb-4 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <LoadingImagesSlider images={loadingImages} direction="right" />
+      <div className="absolute inset-0 flex justify-center">
+        <div className="relative w-full">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-stretch">
+            {/* Top image slider with adjustable gap below */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" style={{ marginBottom: surroundGap }}>
+              <LoadingImagesSlider images={loadingImages} direction="right" />
+            </div>
+            {/* Middle text sliders (centered) */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex flex-col gap-2">
+              <InfiniteSlider
+                durationSeconds={50}
+                gap={36}
+                direction="right"
+                duplicates={10}
+                className="mx-auto h-12 flex items-center"
+                itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+              >
+                {marqueeTexts.map((msg, i) => (
+                  <span key={`marquee-a-${i}`}>{msg}</span>
+                ))}
+              </InfiniteSlider>
+              <InfiniteSlider
+                durationSeconds={50}
+                gap={36}
+                direction="right"
+                duplicates={10}
+                className="mx-auto h-12 flex items-center infinite-slider--delay-half"
+                itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+              >
+                {[...marqueeTexts].reverse().map((msg, i) => (
+                  <span key={`marquee-b-${i}`}>{msg}</span>
+                ))}
+              </InfiniteSlider>
+            </div>
+            {/* Bottom image slider with adjustable gap above */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" style={{ marginTop: surroundGap }}>
+              <LoadingImagesSlider images={loadingImages} direction="left" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Center content (text marquees) */}
-      <div className="flex-1 flex flex-col justify-center gap-4 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <InfiniteSlider
-          durationSeconds={50}
-          gap={36}
-          direction="right"
-          duplicates={10}
-          className="mx-auto h-12 flex items-center"
-          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-        >
-          {marqueeTexts.map((msg, i) => (
-            <span key={`marquee-a-${i}`}>{msg}</span>
-          ))}
-        </InfiniteSlider>
-
-        <InfiniteSlider
-          durationSeconds={50}
-          gap={36}
-          direction="right"
-          duplicates={10}
-          className="mx-auto h-12 flex items-center infinite-slider--delay-half"
-          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-        >
-          {[...marqueeTexts].reverse().map((msg, i) => (
-            <span key={`marquee-b-${i}`}>{msg}</span>
-          ))}
-        </InfiniteSlider>
-      </div>
-
-      {/* Bottom image slider - true full bleed */}
-      <div className="flex-shrink-0 pt-4 pb-20 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <LoadingImagesSlider images={loadingImages} direction="left" />
-      </div>
-
-      {/* Invisible runners that perform the work exactly as before */}
+      {/* Invisible runners for data fetching */}
       {phase === 'search' && !!currentQuery && (
-        <SearchStep
-          query={currentQuery}
-          onDone={(items) => finishQuery(items)}
-          onError={() => finishQuery([])}
-        />
+        <SearchStep query={currentQuery} onDone={(items) => finishQuery(items)} onError={() => finishQuery([])} />
       )}
-
       {phase === 'recommended' && (
-        <RecommendedStep
-          onDone={handleRecommendedDone}
-          onError={() => setPhase('ranking')}
-        />
+        <RecommendedStep onDone={handleRecommendedDone} onError={() => setPhase('ranking')} />
       )}
     </div>
   )
