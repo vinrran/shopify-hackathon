@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import { getMemoryDb } from '../memory.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -7,17 +7,10 @@ const router = Router();
 // GET /api/questions - Get all questions
 router.get('/', async (req, res) => {
   try {
-    const db = getDb();
-    const questions = await db.all('SELECT * FROM questions');
+    const memoryDb = getMemoryDb();
+    const questions = await memoryDb.getAllQuestions();
     
-    const formattedQuestions = questions.map(q => ({
-      id: q.id,
-      prompt: q.prompt,
-      type: q.type,
-      options: JSON.parse(q.options_json)
-    }));
-    
-    res.json({ questions: formattedQuestions });
+    res.json({ questions });
   } catch (error) {
     logger.error('Failed to fetch questions:', error);
     res.status(500).json({ ok: false, error: 'Failed to fetch questions' });
@@ -43,15 +36,12 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    const result = await db.run(
-      'INSERT INTO questions (prompt, type, options_json) VALUES (?, ?, ?)',
-      [prompt, type, JSON.stringify(options)]
-    );
+    const memoryDb = getMemoryDb();
+    const newQuestion = await memoryDb.createQuestion(prompt, type, options);
     
     res.status(201).json({ 
       ok: true, 
-      id: result.lastID 
+      id: newQuestion.id 
     });
   } catch (error) {
     logger.error('Failed to create question:', error);

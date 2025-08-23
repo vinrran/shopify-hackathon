@@ -1,50 +1,28 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import { getMemoryDb } from '../memory.js';
 import logger from '../logger.js';
 
 const router = Router();
 
 // Helper function to store products
-async function storeProducts(db, userId, responseDate, source, results) {
+async function storeProducts(memoryDb, userId, responseDate, source, results) {
   let storedCount = 0;
   
   for (const product of results) {
     try {
-      // Store product
-      await db.run(
-        `INSERT OR REPLACE INTO products 
-         (user_id, response_date, product_id, title, vendor, price, currency, url, thumbnail_url, source, raw_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          userId,
-          responseDate,
-          product.product_id,
-          product.title,
-          product.vendor,
-          product.price,
-          product.currency,
-          product.url,
-          product.thumbnail_url,
-          source,
-          JSON.stringify(product.raw || product)
-        ]
-      );
+      // Store product in memory
+      await memoryDb.saveProduct(userId, responseDate, product, source);
       
       // Store product images
       if (product.images && Array.isArray(product.images)) {
         for (const imageUrl of product.images) {
-          await db.run(
-            `INSERT OR IGNORE INTO product_images 
-             (user_id, response_date, product_id, image_url)
-             VALUES (?, ?, ?, ?)`,
-            [userId, responseDate, product.product_id, imageUrl]
-          );
+          await memoryDb.saveProductImage(userId, responseDate, product.product_id || product.id, imageUrl);
         }
       }
       
       storedCount++;
     } catch (error) {
-      logger.error(`Failed to store product ${product.product_id}:`, error);
+      logger.error(`Failed to store product ${product.product_id || product.id}:`, error);
     }
   }
   
@@ -70,12 +48,15 @@ router.post('/store', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
     // Ensure user exists
-    await db.run('INSERT OR IGNORE INTO users (id) VALUES (?)', [user_id]);
+    let user = await memoryDb.getUser(user_id);
+    if (!user) {
+      user = await memoryDb.createUser(user_id);
+    }
     
-    const storedCount = await storeProducts(db, user_id, response_date, source, results);
+    const storedCount = await storeProducts(memoryDb, user_id, response_date, source, results);
     
     logger.info(`Stored ${storedCount} search products for user ${user_id}`);
     res.json({ ok: true, stored: storedCount });
@@ -97,12 +78,15 @@ router.post('/recommended/store', async (req, res) => {
       });
     }
     
-    const db = getDb();
+    const memoryDb = getMemoryDb();
     
     // Ensure user exists
-    await db.run('INSERT OR IGNORE INTO users (id) VALUES (?)', [user_id]);
+    let user = await memoryDb.getUser(user_id);
+    if (!user) {
+      user = await memoryDb.createUser(user_id);
+    }
     
-    const storedCount = await storeProducts(db, user_id, response_date, 'recommended', results);
+    const storedCount = await storeProducts(memoryDb, user_id, response_date, 'recommended', results);
     
     logger.info(`Stored ${storedCount} recommended products for user ${user_id}`);
     res.json({ ok: true, stored: storedCount });
