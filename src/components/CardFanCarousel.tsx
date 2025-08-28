@@ -24,12 +24,10 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [topSpots, setTopSpots] = useState<any[]>([])
-  const [draggedCard, setDraggedCard] = useState<{ product: any; fromIndex?: number; fromSpot?: number } | null>(null)
-  const [dragOverSpot, setDragOverSpot] = useState<number | null>(null)
-  const [isDragActive, setIsDragActive] = useState(false)
   const [usedProductIds, setUsedProductIds] = useState<Set<string>>(new Set())
   const [shuffleCount, setShuffleCount] = useState(0)
   const [showShareScreen, setShowShareScreen] = useState(false)
+  const [touchMoved, setTouchMoved] = useState(false) // track if finger moved enough to count as swipe
 
   if (loading || !products || products.length === 0) {
     return (
@@ -60,32 +58,6 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
     }
   }, [products, topSpots.length])
 
-  const handleDragStart = (e: React.DragEvent, product: any, fromIndex?: number, fromSpot?: number) => {
-    setDraggedCard({ product, fromIndex, fromSpot })
-    setIsDragActive(true)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', product.id || product.product_id)
-    setIsDragging(false)
-  }
-  const handleDragOver = (e: React.DragEvent, spotIndex: number) => { e.preventDefault(); setDragOverSpot(spotIndex) }
-  const handleDragLeave = () => setDragOverSpot(null)
-  const handleDrop = (e: React.DragEvent, targetSpotIndex: number) => {
-    e.preventDefault(); setDragOverSpot(null); setIsDragActive(false)
-    if (!draggedCard) return
-    const newTop = [...topSpots]
-    if (draggedCard.fromIndex !== undefined) {
-      const oldProduct = newTop[targetSpotIndex]
-      newTop[targetSpotIndex] = draggedCard.product
-      setTopSpots(newTop)
-      const newUsed = new Set(usedProductIds)
-      if (oldProduct) newUsed.delete(oldProduct.id || oldProduct.product_id)
-      newUsed.add(draggedCard.product.id || draggedCard.product.product_id)
-      setUsedProductIds(newUsed)
-    }
-    setDraggedCard(null)
-  }
-  const handleDragEnd = () => { setIsDragActive(false); setDragOverSpot(null); setDraggedCard(null) }
-
   const handleSwapWithCenter = (spotIndex: number) => {
     const pSpot = topSpots[spotIndex]; if (!pSpot) return
     const center = displayProducts[currentIndex]; if (!center) return
@@ -96,14 +68,19 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
     setUsedProductIds(newUsed)
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => { setIsDragging(true); setStartX(e.touches[0].clientX); setCurrentX(e.touches[0].clientX) }
-  const handleTouchMove = (e: React.TouchEvent) => { if (isDragging) setCurrentX(e.touches[0].clientX) }
+  const handleTouchStart = (e: React.TouchEvent) => { setIsDragging(true); setStartX(e.touches[0].clientX); setCurrentX(e.touches[0].clientX); setTouchMoved(false) }
+  const handleTouchMove = (e: React.TouchEvent) => { if (isDragging) { const x = e.touches[0].clientX; setCurrentX(x); if (!touchMoved && Math.abs(x - startX) > 8) setTouchMoved(true) } }
   const handleTouchEnd = () => {
     if (!isDragging) return
     setIsDragging(false)
     const diff = startX - currentX
     if (Math.abs(diff) > 50) {
       setCurrentIndex(prev => diff > 0 ? (prev + 1) % displayProducts.length : (prev - 1 + displayProducts.length) % displayProducts.length)
+    }
+    // After a swipe (any movement beyond small threshold), suppress any click that might follow immediately
+    if (touchMoved) {
+      // Brief timeout to ignore synthetic click after touchend
+      setTimeout(() => setTouchMoved(false), 300)
     }
     setCurrentX(0); setStartX(0)
   }
@@ -144,13 +121,14 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
       <div className="mb-3 mt-4">
         <div className="flex justify-center gap-2 px-2">
           {[0,1,2].map(spotIndex => (
-            <div key={spotIndex} className={`w-30 rounded-lg transition-all duration-200 ${
-              dragOverSpot === spotIndex
-                ? 'bg-blue-50 scale-105 shadow-lg border-2 border-blue-500'
-                : topSpots[spotIndex]
-                ? 'bg-transparent shadow-md hover:shadow-lg'
-                : 'bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 h-40'
-            }`} onDragOver={e => handleDragOver(e, spotIndex)} onDragLeave={handleDragLeave} onDrop={e => handleDrop(e, spotIndex)}>
+            <div
+              key={spotIndex}
+              className={`w-30 rounded-lg transition-all duration-200 ${
+                topSpots[spotIndex]
+                  ? 'bg-transparent shadow-md hover:shadow-lg'
+                  : 'bg-gray-50 border-2 border-dashed border-gray-300 h-40'
+              }`}
+            >
               {topSpots[spotIndex] ? (
                 <div className="w-full h-full flex flex-col items-center">
                   <div className="w-full overflow-hidden rounded-lg">
@@ -162,7 +140,7 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-gray-400 text-xs text-center"><div className="text-2xl mb-1">+</div><div>Drag here</div></div>
+                  <div className="text-gray-400 text-xs text-center"><div className="text-2xl mb-1">+</div><div>Empty Spot</div></div>
                 </div>
               )}
             </div>
@@ -173,8 +151,14 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
         {displayProducts.map((product, index) => {
           const isCenter = index === currentIndex
           return (
-            <div key={product.id || product.product_id || index} className={`absolute w-64 h-80 select-none bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200 ${isCenter ? 'cursor-move' : 'cursor-pointer'} ${isCenter && isDragActive ? 'opacity-50 scale-95' : ''} transition-all duration-200`} style={getCardStyle(index)} onClick={() => { if (!isCenter) setCurrentIndex(index) }} draggable={isCenter} onDragStart={isCenter ? e => handleDragStart(e, product, index) : undefined} onDragEnd={isCenter ? handleDragEnd : undefined}>
-              <div className={`w-full h-full ${!isCenter ? 'pointer-events-none' : ''}`} style={{ opacity: getCardContentOpacity(index) }}>
+            <div
+              key={product.id || product.product_id || index}
+              className={`absolute w-64 h-80 select-none bg-white shadow-2xl overflow-hidden rounded-xl border border-gray-200 cursor-pointer transition-all duration-200`}
+              style={getCardStyle(index)}
+              onClick={() => { if (!isCenter) setCurrentIndex(index) }}
+              onClickCapture={e => { if (touchMoved) { e.preventDefault(); e.stopPropagation(); } }}
+            >
+              <div className={`w-full h-full ${!isCenter ? 'pointer-events-none' : ''}`} style={{ opacity: getCardContentOpacity(index), pointerEvents: touchMoved ? 'none' : undefined }}>
                 <ProductCard product={product} />
               </div>
             </div>
