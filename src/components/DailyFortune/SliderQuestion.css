@@ -9,6 +9,18 @@
   outline: none;
 }
 
+/* Remove focus outline from SVG slider */
+.df-range svg:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Remove focus outline from all focusable elements in slider */
+.df-range *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* WebKit thumb */
 .df-range input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;

@@ -164,7 +164,9 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
 
   return (
     <div
+
       className="min-h-screen relative"
+
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
