@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { DailyFortuneQuestions } from '../components/DailyFortune/DailyFortuneQuestions'
-import { QUESTIONS } from '../components/DailyFortune/question-data'
-// (no direct type usage imported)
 import { useBuyerAttributes } from '@shopify/shop-minis-react'
 import { useApp } from '../context/AppContext'
 import { api } from '../services/api'
@@ -12,11 +10,8 @@ export function QuizPage() {
   const { buyerAttributes } = useBuyerAttributes()
   const genderAffinity = (buyerAttributes as any)?.genderAffinity || (buyerAttributes as any)?.gender || null
 
-  const firstThree = QUESTIONS.slice(0, 3)
-
   return (
     <DailyFortuneQuestions
-      questions={firstThree}
       onComplete={async (ans) => {
         // Immediately navigate to loading (SliderPage) with no visual delay
         dispatch({ type: 'SET_SCREEN', payload: 'loading' })
@@ -25,13 +20,10 @@ export function QuizPage() {
         try {
           // Store the original DailyFortune answers for sharing
           // Convert from the enriched format back to QuestionAnswer format
-          const dailyFortuneAnswers = ans.map(a => {
-            const question = firstThree.find(q => q.title === a.question)
-            return {
-              questionId: question?.id || '',
-              value: a.value
-            }
-          }).filter(a => a.questionId !== '') // Remove any that couldn't be matched
+          const dailyFortuneAnswers = ans.map((a, idx) => ({
+            questionId: `question-${idx + 1}`, // Generate a unique ID since we don't know the actual question IDs
+            value: a.value
+          }))
           dispatch({ type: 'SET_DAILY_FORTUNE_ANSWERS', payload: dailyFortuneAnswers })
 
           // Map answers to a simple backend-friendly shape

@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import type { SliderQuestion } from "./question-types"
+import { getDynamicTitleSize, getDynamicSubtitleSize } from "./text-utils"
 import '../DailyFortune/SliderQuestion.css'
 
 interface SliderQuestionProps {
@@ -111,16 +112,16 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
   return (
     <div className="space-y-8 px-4 df-range -mx-4">
       <div className="text-center space-y-3 pt-4">
-        <div className="bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl">
-          <h2 className="text-4xl font-bold text-white drop-shadow-lg leading-tight tracking-wide">{question.title}</h2>
-          {question.subtitle && <p className="text-white/95 text-xl drop-shadow-md mt-3 font-medium">{question.subtitle}</p>}
+        <div className="bg-black/30 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl h-[25vh] min-h-[160px] max-h-[220px] flex flex-col justify-center overflow-hidden">
+          <h2 className={`${getDynamicTitleSize(question.title)} font-bold text-white drop-shadow-lg leading-tight tracking-wide`}>{question.title}</h2>
+          {question.subtitle && <p className={`text-white/95 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2 font-medium`}>{question.subtitle}</p>}
         </div>
       </div>
 
       <div className="space-y-6 mt-2">
-        <div className="flex justify-between text-sm px-2 text-amber-100/80">
-          <span className="text-base font-medium">{question.leftLabel}</span>
-          <span className="text-base font-medium">{question.rightLabel}</span>
+        <div className="flex justify-between px-4">
+          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg">{question.leftLabel}</span>
+          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg">{question.rightLabel}</span>
         </div>
 
         {/* === Arch Slider (replaces straight horizontal slider) === */}
@@ -163,9 +164,9 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
                 {/* Center value inside (aligned with background inner circle) */}
                 <text
                   x={radius}
-                  y={radius}
+                  y={radius + 45}
                   fill="#ffcd61"
-                  fontSize={24}
+                  fontSize={40}
                   fontWeight={700}
                   textAnchor="middle"
                   dominantBaseline="middle"
