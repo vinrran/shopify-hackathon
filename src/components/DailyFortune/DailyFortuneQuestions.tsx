@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import bg from '../sliderbg2.svg'
 import { QUESTIONS } from "./question-data"
 import type { QuestionAnswer, Question } from "./question-types"
@@ -11,8 +11,30 @@ interface DailyFortuneQuestionsProps {
   onComplete?: (answers: Array<{ question: string; value: number | string | string[] }>) => void
 }
 
+// Function to randomly select 3 questions from the pool with specific types in order
+const getRandomQuestions = (questionPool: Question[]): Question[] => {
+  // Filter questions by type
+  const multipleChoiceQuestions = questionPool.filter(q => q.type === 'multiple-choice')
+  const sliderQuestions = questionPool.filter(q => q.type === 'slider')
+  const singleChoiceQuestions = questionPool.filter(q => q.type === 'single-choice')
+  
+  // Randomly select one from each type
+  const randomMultipleChoice = multipleChoiceQuestions[Math.floor(Math.random() * multipleChoiceQuestions.length)]
+  const randomSlider = sliderQuestions[Math.floor(Math.random() * sliderQuestions.length)]
+  const randomSingleChoice = singleChoiceQuestions[Math.floor(Math.random() * singleChoiceQuestions.length)]
+  
+  // Return in specific order: multiple choice, slider, single choice (radio)
+  return [randomMultipleChoice, randomSlider, randomSingleChoice].filter(Boolean)
+}
+
 export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQuestionsProps) {
-  const localQuestions = questions && questions.length > 0 ? questions : QUESTIONS
+  // Use memoized random selection to ensure consistent questions during the session
+  const localQuestions = useMemo(() => {
+    if (questions && questions.length > 0) {
+      return questions.length > 3 ? getRandomQuestions(questions) : questions
+    }
+    return getRandomQuestions(QUESTIONS)
+  }, [questions])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<QuestionAnswer[]>([])
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -108,7 +130,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen overflow-x-hidden"
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
@@ -116,15 +138,6 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
         backgroundPosition: 'center',
       }}
     >
-      {/* Header */}
-      <div className="sticky top-0 bg-[#1A0051] z-10">
-        <div className="max-w-md mx-auto px-6 py-3">
-          <div className="flex items-center justify-center">
-            <p className="text-sm text-white text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
-          </div>
-          {/* Progress bar and title removed */}
-        </div>
-      </div>
 
       {/* Question Content */}
       <div className="max-w-md mx-auto px-2 py-4">
