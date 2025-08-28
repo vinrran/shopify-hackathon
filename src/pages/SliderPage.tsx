@@ -206,7 +206,7 @@ export function SliderPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col overflow-x-hidden"
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
