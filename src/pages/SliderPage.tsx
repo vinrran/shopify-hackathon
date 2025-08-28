@@ -1,9 +1,9 @@
 // src/pages/SliderPage.tsx
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useProductSearch, useRecommendedProducts } from '@shopify/shop-minis-react'
 import { useApp } from '../context/AppContext'
 import { api } from '../services/api'
-import type { Product } from '../types'
+import type { Product, RankedProduct } from '../types'
 
 import InfiniteSlider from '../components/InfiniteSlider'
 import LoadingImagesSlider from '../components/LoadingImagesSlider'
@@ -19,7 +19,8 @@ import bg from '../components/background.svg'
  * UI: Slider-based loading screen (top + bottom image sliders, center text marquees).
  * Hooks and API calls remain exactly the same as before.
  */
-export function SliderPage() {
+interface SliderPageProps { surroundGap?: number }
+export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
   const { state, dispatch } = useApp()
   const [phase, setPhase] = useState<'search' | 'recommended' | 'ranking'>('search')
   const [qIndex, setQIndex] = useState(0)
@@ -49,76 +50,28 @@ export function SliderPage() {
   const dedupeById = (list: Product[]) => {
     const seen = new Set<string>()
     return list.filter((p: any) => {
-      const id = p?.product_id || p?.id
-      if (!id) return false
-      if (seen.has(id)) return false
-      seen.add(id)
-      return true
+      const id = p?.product_id || p?.id; if (!id || seen.has(id)) return false; seen.add(id); return true
     })
   }
-
   const toMapById = (list: Product[]) => {
-    const map = new Map<string, Product>()
-    for (const p of list) {
-      const id = (p as any)?.product_id || (p as any)?.id
-      if (id) map.set(id, p)
-    }
-    return map
+    const m = new Map<string, Product>(); list.forEach(p => { const id = (p as any)?.product_id || (p as any)?.id; if (id) m.set(id, p) }); return m
   }
-
-  // same transform as before
   const transformShopifyProduct = (p: any): Product => {
-    const image =
-      p?.featuredImage?.url ??
-      p?.images?.edges?.[0]?.node?.url ??
-      p?.images?.[0]?.url ??
-      p?.images?.[0] ??
-      ''
-
-    const priceAmount =
-      p?.priceRange?.minVariantPrice?.amount ??
-      p?.priceRangeV2?.minVariantPrice?.amount ??
-      p?.minPrice ??
-      p?.price?.amount ??
-      p?.variants?.[0]?.price?.amount ??
-      p?.variants?.edges?.[0]?.node?.price?.amount ??
-      null
-
-    const currencyCode =
-      p?.priceRange?.minVariantPrice?.currencyCode ??
-      p?.priceRangeV2?.minVariantPrice?.currencyCode ??
-      p?.currency ??
-      p?.price?.currencyCode ??
-      p?.variants?.[0]?.price?.currencyCode ??
-      p?.variants?.edges?.[0]?.node?.price?.currencyCode ??
-      'USD'
-
-    const vendor =
-      p?.vendor ??
-      p?.vendorName ??
-      p?.brand ??
-      p?.merchant?.name ??
-      p?.store?.name ??
-      'Unknown'
-
-    const url =
-      p?.onlineStoreUrl ??
-      p?.url ??
-      p?.webUrl ??
-      (p?.handle && p?.store?.domain ? `https://${p.store.domain}/products/${p.handle}` : '')
-
+    const image = p?.featuredImage?.url || p?.images?.edges?.[0]?.node?.url || p?.images?.[0]?.url || p?.images?.[0] || ''
+    const priceAmount = p?.priceRange?.minVariantPrice?.amount || p?.priceRangeV2?.minVariantPrice?.amount || p?.minPrice || p?.price?.amount || p?.variants?.[0]?.price?.amount || p?.variants?.edges?.[0]?.node?.price?.amount || '0'
+    const currencyCode = p?.priceRange?.minVariantPrice?.currencyCode || p?.priceRangeV2?.minVariantPrice?.currencyCode || p?.currency || p?.price?.currencyCode || p?.variants?.[0]?.price?.currencyCode || p?.variants?.edges?.[0]?.node?.price?.currencyCode || 'USD'
+    const vendor = p?.vendor || p?.vendorName || p?.brand || p?.merchant?.name || p?.store?.name || 'Unknown'
+    const url = p?.onlineStoreUrl || p?.url || p?.webUrl || (p?.handle && p?.store?.domain ? `https://${p.store.domain}/products/${p.handle}` : '')
     return {
-      product_id: p?.id ?? p?.product_id ?? '',
-      title: p?.title ?? p?.name ?? '',
+      product_id: p?.id || p?.product_id || '',
+      title: p?.title || p?.name || '',
       vendor,
-      price: priceAmount ?? undefined,
+      price: String(priceAmount),
       currency: currencyCode,
       url: url || undefined,
       thumbnail_url: image || undefined,
-      images:
-        p?.images?.edges?.map((e: any) => e.node?.url).filter(Boolean) ??
-        (Array.isArray(p?.images) ? p.images : []),
-      raw: p,
+      images: (p?.images?.edges?.map((e: any) => e.node?.url).filter(Boolean)) || (Array.isArray(p?.images) ? p.images : []),
+      raw: p
     }
   }
 
@@ -172,11 +125,16 @@ export function SliderPage() {
         const ranking = await api.getRanking(state.userId, state.today, 50, 0)
 
         const cache = toMapById(accumulated)
-        const hydrated = (ranking.top || []).map((r: any) => {
+        const hydrated: RankedProduct[] = (ranking.top || []).map((r: any, i: number) => {
           const full = cache.get(r.product_id)
-          return full
-            ? { ...full, score: r.score, reason: r.reason }
-            : { product_id: r.product_id, score: r.score, reason: r.reason }
+          const base: Product = full ? full : {
+            product_id: r.product_id,
+            title: '',
+            vendor: 'Unknown',
+            price: '0',
+            currency: 'USD'
+          }
+          return { ...base, rank: r.rank ?? i + 1, score: r.score, reason: r.reason }
         })
 
         dispatch({ type: 'SET_RANKED', payload: hydrated })
@@ -206,7 +164,9 @@ export function SliderPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col overflow-x-hidden"
+
+      className="min-h-screen relative"
+
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
@@ -214,59 +174,54 @@ export function SliderPage() {
         backgroundPosition: 'center',
       }}
     >
-      {/* Top image slider - true full bleed */}
-      <div className="flex-shrink-0 pb-4 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <LoadingImagesSlider images={loadingImages} direction="right" />
+      <div className="absolute inset-0 flex justify-center">
+        <div className="relative w-full">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-stretch">
+            {/* Top image slider with adjustable gap below */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" style={{ marginBottom: surroundGap }}>
+              <LoadingImagesSlider images={loadingImages} direction="right" />
+            </div>
+            {/* Middle text sliders (centered) */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex flex-col gap-2">
+              <InfiniteSlider
+                durationSeconds={50}
+                gap={36}
+                direction="right"
+                duplicates={10}
+                className="mx-auto h-12 flex items-center"
+                itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+              >
+                {marqueeTexts.map((msg, i) => (
+                  <span key={`marquee-a-${i}`}>{msg}</span>
+                ))}
+              </InfiniteSlider>
+              <InfiniteSlider
+                durationSeconds={50}
+                gap={36}
+                direction="right"
+                duplicates={10}
+                className="mx-auto h-12 flex items-center infinite-slider--delay-half"
+                itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
+              >
+                {[...marqueeTexts].reverse().map((msg, i) => (
+                  <span key={`marquee-b-${i}`}>{msg}</span>
+                ))}
+              </InfiniteSlider>
+            </div>
+            {/* Bottom image slider with adjustable gap above */}
+            <div className="w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" style={{ marginTop: surroundGap }}>
+              <LoadingImagesSlider images={loadingImages} direction="left" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Center content (text marquees) */}
-      <div className="flex-1 flex flex-col justify-center gap-4 px-4">
-        <InfiniteSlider
-          durationSeconds={50}
-          gap={36}
-          direction="right"
-          duplicates={10}
-          className="mx-auto h-12 flex items-center"
-          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-        >
-          {marqueeTexts.map((msg, i) => (
-            <span key={`marquee-a-${i}`}>{msg}</span>
-          ))}
-        </InfiniteSlider>
-
-        <InfiniteSlider
-          durationSeconds={50}
-          gap={36}
-          direction="right"
-          duplicates={10}
-          className="mx-auto h-12 flex items-center infinite-slider--delay-half"
-          itemClassName="text-2xl sm:text-3xl font-semibold whitespace-nowrap px-6 leading-tight justify-center text-[#C8B3FF]"
-        >
-          {[...marqueeTexts].reverse().map((msg, i) => (
-            <span key={`marquee-b-${i}`}>{msg}</span>
-          ))}
-        </InfiniteSlider>
-      </div>
-
-      {/* Bottom image slider - true full bleed */}
-      <div className="flex-shrink-0 pt-4 pb-20 w-screen overflow-hidden relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-        <LoadingImagesSlider images={loadingImages} direction="left" />
-      </div>
-
-      {/* Invisible runners that perform the work exactly as before */}
+      {/* Invisible runners for data fetching */}
       {phase === 'search' && !!currentQuery && (
-        <SearchStep
-          query={currentQuery}
-          onDone={(items) => finishQuery(items)}
-          onError={() => finishQuery([])}
-        />
+        <SearchStep query={currentQuery} onDone={(items) => finishQuery(items)} onError={() => finishQuery([])} />
       )}
-
       {phase === 'recommended' && (
-        <RecommendedStep
-          onDone={handleRecommendedDone}
-          onError={() => setPhase('ranking')}
-        />
+        <RecommendedStep onDone={handleRecommendedDone} onError={() => setPhase('ranking')} />
       )}
     </div>
   )
