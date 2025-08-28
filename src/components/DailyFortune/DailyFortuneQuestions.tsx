@@ -108,7 +108,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen overflow-x-hidden"
       style={{
         backgroundImage: `url(${bg})`,
         backgroundSize: 'cover',
@@ -116,15 +116,6 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
         backgroundPosition: 'center',
       }}
     >
-      {/* Header */}
-      <div className="sticky top-0 bg-[#1A0051] z-10">
-        <div className="max-w-md mx-auto px-6 py-3">
-          <div className="flex items-center justify-center">
-            <p className="text-sm text-white text-center">Question {currentQuestionIndex + 1} of {localQuestions.length}</p>
-          </div>
-          {/* Progress bar and title removed */}
-        </div>
-      </div>
 
       {/* Question Content */}
       <div className="max-w-md mx-auto px-2 py-4">
