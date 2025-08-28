@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { SingleChoiceQuestion } from "./question-types"
+import { getDynamicTitleSize, getDynamicSubtitleSize } from "./text-utils"
 
 interface SingleChoiceQuestionProps {
   question: SingleChoiceQuestion
@@ -18,9 +19,9 @@ export function SingleChoiceQuestionComponent({ question, value, onChange }: Sin
   return (
     <div className="space-y-8 px-4">
       <div className="text-center space-y-3">
-        <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-6 border border-white/10 shadow-lg">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg leading-tight">{question.title}</h2>
-          {question.subtitle && <p className="text-white/90 text-lg drop-shadow-md mt-2">{question.subtitle}</p>}
+        <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-lg h-[25vh] min-h-[160px] max-h-[220px] flex flex-col justify-center overflow-hidden">
+          <h2 className={`${getDynamicTitleSize(question.title)} font-bold text-white drop-shadow-lg leading-tight`}>{question.title}</h2>
+          {question.subtitle && <p className={`text-white/90 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2`}>{question.subtitle}</p>}
         </div>
       </div>
 

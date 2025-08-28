@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { initMemoryStorage } from './memory.js';
+import { initDatabase } from './database.js';
 import authMiddleware from './middleware/auth.js';
 import logger from './logger.js';
 
@@ -91,9 +91,9 @@ app.use((req, res) => {
 // Initialize and start server
 async function startServer() {
   try {
-    // Initialize in-memory storage
-    await initMemoryStorage();
-    logger.info('In-memory storage initialized successfully');
+    // Initialize database
+    await initDatabase();
+    logger.info('Database initialized successfully');
     
     // Start server
     app.listen(PORT, () => {
