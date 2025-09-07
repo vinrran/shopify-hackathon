@@ -1,14 +1,17 @@
 // Corrected relative path to SVG (LandingPage is in pages/, asset is in components/)
 import divination from '../components/divination.svg'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { TooltipOverlay } from '../components/TooltipOverlay'
 
 export function LandingPage() {
+  const [showTooltip, setShowTooltip] = useState(true)
   const handleStart = useCallback(() => {
     if (window.location.pathname !== '/quiz') {
       window.history.pushState({}, '', '/quiz')
       window.dispatchEvent(new PopStateEvent('popstate'))
     }
   }, [])
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
       {/* Full-screen SVG background */}
@@ -28,7 +31,7 @@ export function LandingPage() {
           }}
         />
       </div>
-      
+
       {/* GET STARTED Button Overlay - positioned above the line, below "What will you foresee today?" */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pt-116">
         <button
@@ -57,9 +60,14 @@ export function LandingPage() {
           >Get Started</span>
         </button>
       </div>
-      
+
       {/* Optional subtle overlay to ensure button visibility */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
+
+      {/* Tooltip overlay */}
+      {showTooltip && (
+        <TooltipOverlay onDismiss={() => setShowTooltip(false)} />
+      )}
     </div>
   )
 }
