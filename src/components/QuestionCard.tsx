@@ -45,7 +45,7 @@ export function QuestionCard({
         <p className="text-xs text-gray-500 mb-1">
           Question {questionNumber} of 3
         </p>
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-900 gold-title">
           {question.prompt}
         </h3>
         <p className="text-xs text-gray-600 mt-1">

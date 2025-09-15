@@ -95,7 +95,7 @@ export function QuizScreen() {
         <>
           {/* Quiz Title */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 text-center">
+            <h2 className="gold-title text-center">
               Daily Style Quiz
             </h2>
             <p className="text-sm text-gray-600 text-center mt-2">
