@@ -1,5 +1,4 @@
 // Main flow orchestrator component
-import React, { useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import { QuizPage } from '../pages/QuizPage'
 import { CardLoadingPage } from '../pages/CardLoadingPage'

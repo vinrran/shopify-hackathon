@@ -1,3 +1,24 @@
+/* Reusable class for gold uppercase button text */
+.gold-title {
+	font-family: 'Castoro Titling', serif;
+	font-size: 20px;
+	font-weight: 400;
+	letter-spacing: 0.6px;
+	text-align: center;
+	color: #FFCD61;
+	text-transform: uppercase;
+}
+
+.white-title {
+	font-family: 'Castoro Titling', serif;
+	font-size: 20px;
+	font-weight: 400;
+	letter-spacing: 0.6px;
+	text-align: center;
+	color: #ffffff;
+	text-transform: uppercase;
+
+}
 @import "@shopify/shop-minis-react/styles";
 
 @keyframes spin-and-exit {

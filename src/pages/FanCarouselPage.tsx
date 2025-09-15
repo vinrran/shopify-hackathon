@@ -31,7 +31,7 @@ export function FanCarouselPage() {
       {/* Fortunes header - single instance, positioned lower */}
       <div className="w-full mt-12 pt-2 pb-6">
         <h1
-          className="text-center font-medium tracking-wide uppercase text-[#ffcd61]"
+          className="gold-title text-center font-medium tracking-wide uppercase text-[#ffcd61]"
           style={{ fontSize: 20 }}
         >
           Fortunes

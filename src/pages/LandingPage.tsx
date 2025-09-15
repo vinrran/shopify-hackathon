@@ -47,17 +47,7 @@ export function LandingPage() {
             WebkitBackdropFilter: 'blur(10px)'
           }}
         >
-          <span 
-            className="uppercase"
-            style={{
-              fontFamily: 'Castoro Titling, serif',
-              fontSize: '20px',
-              fontWeight: 400,
-              letterSpacing: '0.6px', // 3% of 20px
-              textAlign: 'center',
-              color: '#FFCD61'
-            }}
-          >Get Started</span>
+          <span className="gold-title">Get Started</span>
         </button>
       </div>
 
