@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import memoryStorage from '../memoryStorage.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -16,25 +16,10 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    
-    // Ensure user exists
-    await db.run(
-      'INSERT OR IGNORE INTO users (id) VALUES (?)',
-      [user_id]
-    );
-    
-    // Store each response (idempotent with REPLACE)
+    // Store each response
     for (const answer of answers) {
       const { qid, answer: userAnswer } = answer;
-      const answerJson = JSON.stringify(userAnswer);
-      
-      await db.run(
-        `INSERT OR REPLACE INTO user_responses 
-         (user_id, response_date, qid, answer_json) 
-         VALUES (?, ?, ?, ?)`,
-        [user_id, response_date, qid, answerJson]
-      );
+      memoryStorage.storeUserResponse(user_id, response_date, qid, userAnswer);
     }
     
     logger.info(`Stored ${answers.length} responses for user ${user_id} on ${response_date}`);

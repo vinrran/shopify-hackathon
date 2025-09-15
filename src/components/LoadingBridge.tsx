@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useProductSearch, useRecommendedProducts } from '@shopify/shop-minis-react'
 import { useApp } from '../context/AppContext'
 import { api } from '../services/api'
@@ -9,7 +9,7 @@ import type { Product } from '../types'
  * Phases:
  *  1) search        — useProductSearch across all queries w/ pagination, cache + store
  *  2) recommended   — useRecommendedProducts once, cache + store
- *  3) ranking       — backend builds ranking; hydrate ranked items from cache; go to results
+ *  3) ranking       — shuffle products directly and go to results (no vision processing)
  */
 export function LoadingBridge() {
   const { state, dispatch } = useApp()
@@ -33,14 +33,6 @@ export function LoadingBridge() {
     })
   }
 
-  const toMapById = (list: Product[]) => {
-    const map = new Map<string, Product>()
-    for (const p of list) {
-      const id = (p as any)?.product_id || (p as any)?.id
-      if (id) map.set(id, p)
-    }
-    return map
-  }
 
   // --- replace your transformShopifyProduct with this ---
 const transformShopifyProduct = (p: any): Product => {
@@ -117,7 +109,6 @@ const transformShopifyProduct = (p: any): Product => {
       } else {
         if (merged.length > 0) {
           await api.storeProducts(state.userId, state.today, 'search', merged)
-          // Note: Vision processing moved to after all products are collected
         }
         setPhase('recommended')
       }
@@ -135,7 +126,6 @@ const transformShopifyProduct = (p: any): Product => {
         // cache too, so we can hydrate later
         setAccumulated((prev) => dedupeById([...prev, ...transformed]))
         await api.storeRecommendedProducts(state.userId, state.today, transformed)
-        // Note: Vision processing moved to after all products are collected
       }
     } catch (e) {
       console.error('processRecommendedProducts error:', e)
@@ -148,32 +138,29 @@ const transformShopifyProduct = (p: any): Product => {
   useEffect(() => {
     if (phase !== 'ranking') return
 
-    const buildAndFetchRanking = async () => {
+    const buildAndShuffleProducts = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
-        // Process ALL collected products with vision AI in one batch
-        console.log('Starting comprehensive vision processing for all products...')
-        await api.processProductVision(state.userId, state.today, accumulated)
-        console.log('Vision processing complete for all products')
+        // Skip vision processing and ranking - go directly to shuffling
+        console.log('Shuffling products directly without vision processing...')
+        console.log(`Total products collected: ${accumulated.length}`)
         
-        await api.buildRanking(state.userId, state.today)
-        dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: true } })
-        const ranking = await api.getRanking(state.userId, state.today, 20, 0)
-
-        // HYDRATE: merge top ranks with full product data from our cache so UI can render
-        const cache = toMapById(accumulated)
-        const hydrated = (ranking.top || []).map((r: any) => {
-          const full = cache.get(r.product_id)
-          return full
-            ? { ...full, score: r.score, reason: r.reason }
-            : { product_id: r.product_id, score: r.score, reason: r.reason } // fallback; UI may hide if missing fields
-        })
-
-        dispatch({ type: 'SET_RANKED', payload: hydrated })
-        dispatch({ type: 'SET_HAS_MORE', payload: !!ranking.has_more })
+        // SHUFFLE: randomly shuffle all accumulated products
+        const shuffled = [...accumulated].sort(() => Math.random() - 0.5)
+        
+        // Convert to RankedProduct format for compatibility
+        const rankedProducts = shuffled.map((product, index) => ({
+          ...product,
+          rank: index + 1,
+          score: 1.0,
+          reason: 'Randomly shuffled'
+        }))
+        
+        dispatch({ type: 'SET_RANKED', payload: rankedProducts })
+        dispatch({ type: 'SET_HAS_MORE', payload: false }) // No pagination needed for shuffled products
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
       } catch (err) {
-        console.error('buildAndFetchRanking error:', err)
+        console.error('buildAndShuffleProducts error:', err)
         dispatch({ type: 'SET_ERROR', payload: 'Failed to build recommendations. Please try again.' })
         dispatch({ type: 'SET_SCREEN', payload: 'card' }) // proceed to animation
       } finally {
@@ -182,7 +169,7 @@ const transformShopifyProduct = (p: any): Product => {
       }
     }
 
-    buildAndFetchRanking()
+    buildAndShuffleProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
@@ -236,7 +223,7 @@ function progressMessage(
     return `Searching for "${current}"... (${idx + 1}/${queries.length})`
   }
   if (phase === 'recommended') return 'Getting personalized recommendations...'
-  return 'Building your personalized collection...'
+  return 'Preparing your collection...'
 }
 
 function Stepper({ phase }: { phase: 'search' | 'recommended' | 'ranking' }) {
@@ -293,18 +280,18 @@ function SearchStep({
   onError: (err: unknown) => void
 }) {
   // As per docs: useProductSearch({ query, first? })
-  // Limit to top 3 products per search for performance
+  // Get 10 products per search query for better variety
   const {
     products,
     loading,
     error,
     hasNextPage,
     fetchMore,
-  } = useProductSearch({ query, first: 3 })
+  } = useProductSearch({ query, first: 10 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)
-  const MAX_PAGES = 1 
+  const MAX_PAGES = 3 // Get more products per query (up to 30 products per query) 
 
   // Timeout fallback: if nothing arrives within 6s, move on with what we have
   useEffect(() => {
@@ -364,11 +351,11 @@ function RecommendedStep({
     error,
     hasNextPage,
     fetchMore,
-  } = useRecommendedProducts({ first: 6 })
+  } = useRecommendedProducts({ first: 10 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)
-  const MAX_PAGES = 1 // Only get first page (3 recommended products)
+  const MAX_PAGES = 2 // Get more recommended products (up to 20 recommended products)
 
   useEffect(() => {
     if (loading) return
