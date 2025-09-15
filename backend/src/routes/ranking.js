@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import memoryStorage from '../memoryStorage.js';
 import { rankProducts } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -17,16 +17,8 @@ router.post('/build', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    
     // Get today's responses
-    const todayResponses = await db.all(
-      `SELECT ur.*, q.prompt
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? AND ur.response_date = ?`,
-      [user_id, response_date]
-    );
+    const todayResponses = memoryStorage.getUserResponses(user_id, response_date);
     
     // Format today's responses
     const formattedTodayResponses = {};
@@ -37,26 +29,7 @@ router.post('/build', async (req, res) => {
 
     
     // Get products with vision data
-    const products = await db.all(
-      `SELECT DISTINCT 
-         p.product_id,
-         p.title,
-         p.vendor,
-         p.price,
-         p.currency,
-         p.url,
-         p.thumbnail_url,
-         pvd.caption,
-         pvd.tags_json,
-         pvd.attributes_json
-       FROM products p
-       LEFT JOIN product_vision_data pvd 
-         ON p.user_id = pvd.user_id 
-         AND p.response_date = pvd.response_date 
-         AND p.product_id = pvd.product_id
-       WHERE p.user_id = ? AND p.response_date = ?`,
-      [user_id, response_date]
-    );
+    const products = memoryStorage.getProductsWithVisionData(user_id, response_date);
     
     // Format products for ranking
     const formattedProducts = products.map(p => ({
@@ -73,39 +46,31 @@ router.post('/build', async (req, res) => {
     
 
     
-    // Get ranking from Fal.ai using user inputs and vision data
+    // Get all products without LLM ranking
     const rankedProducts = await rankProducts({
       todayResponses: formattedTodayResponses,
-      todayQueries: [], // No longer used - ranking uses user inputs + vision data directly
+      todayQueries: [], // Not used anymore
       products: formattedProducts
     });
     
     // Clear existing rankings for this date
-    await db.run(
-      'DELETE FROM ranked_products WHERE user_id = ? AND response_date = ?',
-      [user_id, response_date]
-    );
+    memoryStorage.clearRankedProducts(user_id, response_date);
     
     // Store new rankings
     for (let i = 0; i < rankedProducts.length; i++) {
       const ranked = rankedProducts[i];
-      await db.run(
-        `INSERT INTO ranked_products 
-         (user_id, response_date, rank, product_id, score, reason, context_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          user_id,
-          response_date,
-          i + 1,
-          ranked.product_id,
-          ranked.score,
-          ranked.reason,
-          1
-        ]
+      memoryStorage.storeRankedProduct(
+        user_id,
+        response_date,
+        i + 1,
+        ranked.product_id,
+        ranked.score,
+        ranked.reason,
+        1
       );
     }
     
-    logger.info(`Built ranking of ${rankedProducts.length} products for user ${user_id}`);
+    logger.info(`Built product list of ${rankedProducts.length} products for user ${user_id} (no LLM ranking)`);
     
     res.json({
       top: rankedProducts.map((p, i) => ({
@@ -133,32 +98,11 @@ router.get('/', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    
     // Get latest context version
-    const maxVersion = await db.get(
-      `SELECT MAX(context_version) as max_version 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
-    
-    const contextVersion = maxVersion?.max_version || 1;
+    const contextVersion = memoryStorage.getMaxContextVersion(user_id, response_date) || 1;
     
     // Get ranked products with pagination
-    const rankedProducts = await db.all(
-      `SELECT rp.*, p.title, p.vendor, p.price, p.currency, p.url, p.thumbnail_url
-       FROM ranked_products rp
-       JOIN products p ON rp.product_id = p.product_id 
-         AND rp.user_id = p.user_id 
-         AND rp.response_date = p.response_date
-       WHERE rp.user_id = ? 
-         AND rp.response_date = ?
-         AND rp.context_version = ?
-       ORDER BY rp.rank
-       LIMIT ? OFFSET ?`,
-      [user_id, response_date, contextVersion, limit, offset]
-    );
+    const rankedProducts = memoryStorage.getRankedProducts(user_id, response_date, parseInt(limit), parseInt(offset));
     
     res.json({
       products: rankedProducts,
@@ -185,55 +129,19 @@ router.post('/replenish', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    
     // Get current max context version
-    const maxVersion = await db.get(
-      `SELECT MAX(context_version) as max_version 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
-    
-    const nextVersion = (maxVersion?.max_version || 0) + 1;
+    const maxVersion = memoryStorage.getMaxContextVersion(user_id, response_date);
+    const nextVersion = (maxVersion || 0) + 1;
     
     // Get all products except excluded ones
-    const placeholders = exclude_product_ids.map(() => '?').join(',');
-    const products = await db.all(
-      `SELECT DISTINCT 
-         p.product_id,
-         p.title,
-         p.vendor,
-         p.price,
-         p.currency,
-         p.url,
-         p.thumbnail_url,
-         pvd.caption,
-         pvd.tags_json,
-         pvd.attributes_json
-       FROM products p
-       LEFT JOIN product_vision_data pvd 
-         ON p.user_id = pvd.user_id 
-         AND p.response_date = pvd.response_date 
-         AND p.product_id = pvd.product_id
-       WHERE p.user_id = ? 
-         AND p.response_date = ?
-         AND p.product_id NOT IN (${placeholders})`,
-      [user_id, response_date, ...exclude_product_ids]
-    );
+    const products = memoryStorage.getProductsExcluding(user_id, response_date, exclude_product_ids);
     
     if (products.length === 0) {
       return res.json({ added: 0 });
     }
     
     // Get context data for ranking
-    const todayResponses = await db.all(
-      `SELECT ur.*, q.prompt
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? AND ur.response_date = ?`,
-      [user_id, response_date]
-    );
+    const todayResponses = memoryStorage.getUserResponses(user_id, response_date);
     
     const formattedTodayResponses = {};
     for (const r of todayResponses) {
@@ -241,11 +149,7 @@ router.post('/replenish', async (req, res) => {
       formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
     }
     
-    const todayQueries = await db.all(
-      `SELECT query FROM search_queries 
-       WHERE user_id = ? AND response_date = ?`,
-      [user_id, response_date]
-    );
+    const todayQueries = memoryStorage.getSearchQueries(user_id, response_date);
     
     // Format products
     const formattedProducts = products.map(p => ({
@@ -258,7 +162,7 @@ router.post('/replenish', async (req, res) => {
       attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
     }));
     
-    // Get new ranking with negative context
+    // Get all products without LLM ranking
     const rankedProducts = await rankProducts({
       todayResponses: formattedTodayResponses,
       todayQueries: todayQueries.map(q => q.query),
@@ -268,34 +172,22 @@ router.post('/replenish', async (req, res) => {
     });
     
     // Store new rankings with incremented version
-    let startRank = await db.get(
-      `SELECT MAX(rank) as max_rank 
-       FROM ranked_products 
-       WHERE user_id = ? AND response_date = ? AND context_version = ?`,
-      [user_id, response_date, nextVersion - 1]
-    );
-    
-    const baseRank = (startRank?.max_rank || 0) + 1;
+    const baseRank = memoryStorage.getMaxRankForVersion(user_id, response_date, nextVersion - 1) + 1;
     
     for (let i = 0; i < rankedProducts.length; i++) {
       const ranked = rankedProducts[i];
-      await db.run(
-        `INSERT INTO ranked_products 
-         (user_id, response_date, rank, product_id, score, reason, context_version)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          user_id,
-          response_date,
-          baseRank + i,
-          ranked.product_id,
-          ranked.score,
-          ranked.reason,
-          nextVersion
-        ]
+      memoryStorage.storeRankedProduct(
+        user_id,
+        response_date,
+        baseRank + i,
+        ranked.product_id,
+        ranked.score,
+        ranked.reason,
+        nextVersion
       );
     }
     
-    logger.info(`Added ${rankedProducts.length} new products to ranking for user ${user_id}`);
+    logger.info(`Added ${rankedProducts.length} new products to list for user ${user_id} (no LLM ranking)`);
     res.json({ added: rankedProducts.length });
   } catch (error) {
     logger.error('Failed to replenish ranking:', error);
