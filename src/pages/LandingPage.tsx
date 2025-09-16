@@ -2,15 +2,25 @@
 import divination from '../components/divination.svg'
 import { useCallback, useState } from 'react'
 import { TooltipOverlay } from '../components/TooltipOverlay'
+import { SimpleShareScreen } from '../components/SimpleShareScreen'
 
 export function LandingPage() {
   const [showTooltip, setShowTooltip] = useState(true)
+  const [showShareScreen, setShowShareScreen] = useState(false)
+  
   const handleStart = useCallback(() => {
     if (window.location.pathname !== '/quiz') {
       window.history.pushState({}, '', '/quiz')
       window.dispatchEvent(new PopStateEvent('popstate'))
     }
   }, [])
+
+  // Sample answers for testing the share screen
+  const sampleAnswers = [
+    { questionId: 'mood-emoji', value: 'sparkles' },
+    { questionId: 'energy-level', value: 75 },
+    { questionId: 'current-season-feel', value: 'spring' }
+  ]
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
@@ -64,9 +74,29 @@ export function LandingPage() {
       {/* Optional subtle overlay to ensure button visibility */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
 
+      {/* Dev Share Button - Fixed in top right */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={() => setShowShareScreen(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 text-sm font-medium"
+          title="Test Share Screen"
+        >
+          🔗 Dev Share
+        </button>
+      </div>
+
       {/* Tooltip overlay */}
       {showTooltip && (
         <TooltipOverlay onDismiss={() => setShowTooltip(false)} />
+      )}
+
+      {/* Share Screen Modal */}
+      {showShareScreen && (
+        <SimpleShareScreen
+          answers={sampleAnswers}
+          selectedProducts={[]} // Empty to test recommended products fallback
+          onClose={() => setShowShareScreen(false)}
+        />
       )}
     </div>
   )

@@ -2,7 +2,6 @@
 import { Routes, Route } from 'react-router'
 import { useEffect, useState } from 'react'
 import { SliderPage } from './pages'
-import { QuizPage } from './pages/QuizPage'
 import { LandingPage } from './pages/LandingPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { FanCarouselPage } from './pages/FanCarouselPage'
@@ -10,6 +9,7 @@ import { CardLoadingPage } from './pages/CardLoadingPage'
 import { AppProvider } from './context/AppContext'
 import bg from './components/background.svg'
 import { MainFlow } from './components/MainFlow'
+import { DevShareButton } from './components/DevShareButton'
 
 export function App() {
   // Navbar removed per design request
@@ -67,6 +67,9 @@ export function App() {
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </main>
+
+      {/* Global Dev Share Button - Only show in development */}
+      {process.env.NODE_ENV === 'development' && <DevShareButton />}
     </div>
   )
 }
