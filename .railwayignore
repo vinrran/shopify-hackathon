@@ -27,3 +27,6 @@ test-*.ts
 
 # Other config files
 render.yaml
+
+# Keep backend folder and its contents
+!backend/

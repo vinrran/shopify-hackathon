@@ -1,13 +1,15 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK"
+    "builder": "RAILPACK",
+    "buildCommand": "cd backend && npm install"
   },
   "deploy": {
     "runtime": "V2",
     "numReplicas": 1,
     "sleepApplication": false,
     "useLegacyStacker": false,
+    "startCommand": "cd backend && npm start",
     "multiRegionConfig": {
       "us-east4-eqdc4a": {
         "numReplicas": 1
