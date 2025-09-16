@@ -1,0 +1,29 @@
+# Frontend files (not needed for backend deployment)
+src/
+public/
+index.html
+vite.config.mjs
+tsconfig.json
+tsconfig.tsbuildinfo
+
+# Development files
+.DS_Store
+.env.local
+.env.development
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+SUPABASE_SETUP.md
+SHARE_INTEGRATION.md
+
+# Test files
+test-*.js
+test-*.ts
+
+# Other config files
+render.yaml
