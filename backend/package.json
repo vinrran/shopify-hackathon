@@ -17,8 +17,7 @@
     "joi": "^17.11.0",
     "express-rate-limit": "^7.1.5",
     "winston": "^3.11.0",
-    "@supabase/supabase-js": "^2.38.0",
-    "@supabase/auth-helpers-node": "^0.0.7"
+    "@supabase/supabase-js": "^2.38.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.5"
