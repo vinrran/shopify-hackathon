@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import memoryStorage from '../memoryStorage.js';
+import supabaseService from '../services/supabaseService.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -7,13 +7,13 @@ const router = Router();
 // GET /api/questions - Get all questions
 router.get('/', async (req, res) => {
   try {
-    const questions = memoryStorage.getAllQuestions();
+    const questions = await supabaseService.getAllQuestions();
     
     const formattedQuestions = questions.map(q => ({
       id: q.id,
       prompt: q.prompt,
       type: q.type,
-      options: q.options
+      options: q.options_json ? JSON.parse(q.options_json) : []
     }));
     
     res.json({ questions: formattedQuestions });
@@ -42,11 +42,17 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const id = memoryStorage.addQuestion(prompt, type, options);
+    const questionData = {
+      prompt,
+      type,
+      options_json: JSON.stringify(options)
+    };
+    
+    const result = await supabaseService.addQuestion(questionData);
     
     res.status(201).json({ 
       ok: true, 
-      id: id 
+      id: result.id 
     });
   } catch (error) {
     logger.error('Failed to create question:', error);

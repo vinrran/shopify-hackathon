@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import memoryStorage from '../memoryStorage.js';
+import supabaseService from '../services/supabaseService.js';
 import { generateSearchQueries } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -18,7 +18,7 @@ router.post('/generate', async (req, res) => {
     }
     
     // Fetch today's responses
-    const responses = memoryStorage.getUserResponses(user_id, response_date);
+    const responses = await supabaseService.getUserResponses(user_id, response_date);
     
     if (responses.length === 0) {
       return res.status(400).json({ 
@@ -30,7 +30,7 @@ router.post('/generate', async (req, res) => {
     // Format responses for Fal.ai
     const formattedResponses = {};
     for (const r of responses) {
-      const answer = JSON.parse(r.answer_json);
+      const answer = r.response_value;
       const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
       formattedResponses[prompt] = answer;
     }
@@ -41,9 +41,12 @@ router.post('/generate', async (req, res) => {
       genderAffinity: gender_affinity
     });
     
-    // Store queries in memory
+    // Store queries in database
     for (const query of queries) {
-      memoryStorage.storeSearchQuery(user_id, response_date, query, 'llm');
+      await supabaseService.storeSearchQuery(user_id, {
+        query_text: query,
+        response_date
+      });
     }
     
     logger.info(`Generated ${queries.length} search queries for user ${user_id}`);

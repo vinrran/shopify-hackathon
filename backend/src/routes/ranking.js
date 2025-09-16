@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import memoryStorage from '../memoryStorage.js';
+import supabaseService from '../services/supabaseService.js';
 import { rankProducts } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -18,18 +18,18 @@ router.post('/build', async (req, res) => {
     }
     
     // Get today's responses
-    const todayResponses = memoryStorage.getUserResponses(user_id, response_date);
+    const todayResponses = await supabaseService.getUserResponses(user_id, response_date);
     
     // Format today's responses
     const formattedTodayResponses = {};
     for (const r of todayResponses) {
       const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
-      formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
+      formattedTodayResponses[prompt] = r.response_value;
     }
 
     
     // Get products with vision data
-    const products = memoryStorage.getProductsWithVisionData(user_id, response_date);
+    const products = await supabaseService.getProductsWithVisionData(user_id, response_date);
     
     // Format products for ranking
     const formattedProducts = products.map(p => ({
@@ -39,9 +39,9 @@ router.post('/build', async (req, res) => {
       price: p.price,
       currency: p.currency,
       url: p.url,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
+      tags: p.product_vision_data?.vision_data?.tags || [],
+      caption: p.product_vision_data?.vision_data?.caption || '',
+      attributes: p.product_vision_data?.vision_data?.attributes || {}
     }));
     
 
@@ -54,16 +54,16 @@ router.post('/build', async (req, res) => {
     });
     
     // Clear existing rankings for this date
-    memoryStorage.clearRankedProducts(user_id, response_date);
+    await supabaseService.clearRankedProducts(user_id, response_date);
     
     // Store new rankings
     for (let i = 0; i < rankedProducts.length; i++) {
       const ranked = rankedProducts[i];
-      memoryStorage.storeRankedProduct(
+      await supabaseService.storeRankedProduct(
         user_id,
         response_date,
+        ranked,
         i + 1,
-        ranked.product_id,
         ranked.score,
         ranked.reason,
         1
@@ -99,10 +99,10 @@ router.get('/', async (req, res) => {
     }
     
     // Get latest context version
-    const contextVersion = memoryStorage.getMaxContextVersion(user_id, response_date) || 1;
+    const contextVersion = await supabaseService.getMaxContextVersion(user_id, response_date) || 1;
     
     // Get ranked products with pagination
-    const rankedProducts = memoryStorage.getRankedProducts(user_id, response_date, parseInt(limit), parseInt(offset));
+    const rankedProducts = await supabaseService.getRankedProducts(user_id, response_date, parseInt(limit), parseInt(offset));
     
     res.json({
       products: rankedProducts,
@@ -130,26 +130,27 @@ router.post('/replenish', async (req, res) => {
     }
     
     // Get current max context version
-    const maxVersion = memoryStorage.getMaxContextVersion(user_id, response_date);
+    const maxVersion = await supabaseService.getMaxContextVersion(user_id, response_date);
     const nextVersion = (maxVersion || 0) + 1;
     
     // Get all products except excluded ones
-    const products = memoryStorage.getProductsExcluding(user_id, response_date, exclude_product_ids);
+    const products = await supabaseService.getProductsExcluding(user_id, response_date, exclude_product_ids);
     
     if (products.length === 0) {
       return res.json({ added: 0 });
     }
     
     // Get context data for ranking
-    const todayResponses = memoryStorage.getUserResponses(user_id, response_date);
+    const todayResponses = await supabaseService.getUserResponses(user_id, response_date);
     
     const formattedTodayResponses = {};
     for (const r of todayResponses) {
       const prompt = r.prompt.toLowerCase().replace(/\s+/g, '_');
-      formattedTodayResponses[prompt] = JSON.parse(r.answer_json);
+      formattedTodayResponses[prompt] = r.response_value;
     }
     
-    const todayQueries = memoryStorage.getSearchQueries(user_id, response_date);
+    // Note: Search queries are not stored in the new schema, so we'll use empty array
+    const todayQueries = [];
     
     // Format products
     const formattedProducts = products.map(p => ({
@@ -157,9 +158,9 @@ router.post('/replenish', async (req, res) => {
       title: p.title,
       vendor: p.vendor,
       price: p.price,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
+      tags: [],
+      caption: '',
+      attributes: {}
     }));
     
     // Get all products without LLM ranking
@@ -172,15 +173,15 @@ router.post('/replenish', async (req, res) => {
     });
     
     // Store new rankings with incremented version
-    const baseRank = memoryStorage.getMaxRankForVersion(user_id, response_date, nextVersion - 1) + 1;
+    const baseRank = await supabaseService.getMaxRankForVersion(user_id, response_date, nextVersion - 1) + 1;
     
     for (let i = 0; i < rankedProducts.length; i++) {
       const ranked = rankedProducts[i];
-      memoryStorage.storeRankedProduct(
+      await supabaseService.storeRankedProduct(
         user_id,
         response_date,
+        ranked,
         baseRank + i,
-        ranked.product_id,
         ranked.score,
         ranked.reason,
         nextVersion

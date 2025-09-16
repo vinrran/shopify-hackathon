@@ -1,24 +1,19 @@
 import { Router } from 'express';
-import memoryStorage from '../memoryStorage.js';
+import supabaseService from '../services/supabaseService.js';
 import logger from '../logger.js';
 
 const router = Router();
 
 // Helper function to store products
 async function storeProducts(userId, responseDate, source, results) {
-  let storedCount = 0;
-  
-  for (const product of results) {
-    try {
-      // Store product in memory
-      memoryStorage.storeProduct(userId, responseDate, source, product);
-      storedCount++;
-    } catch (error) {
-      logger.error(`Failed to store product ${product.product_id}:`, error);
-    }
+  try {
+    // Store all products in batch
+    const storedProducts = await supabaseService.storeProducts(userId, responseDate, source, results);
+    return storedProducts.length;
+  } catch (error) {
+    logger.error('Failed to store products:', error);
+    throw error;
   }
-  
-  return storedCount;
 }
 
 // POST /api/products/store - Store search results

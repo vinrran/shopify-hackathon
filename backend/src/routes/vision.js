@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import memoryStorage from '../memoryStorage.js';
+import supabaseService from '../services/supabaseService.js';
 import { processImagesVisionBatch } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -18,7 +18,7 @@ router.post('/run', async (req, res) => {
     }
     
     // Get unprocessed images
-    const unprocessedImages = memoryStorage.getUnprocessedImages(user_id, response_date);
+    const unprocessedImages = await supabaseService.getUnprocessedImages(user_id, response_date);
     
     if (unprocessedImages.length === 0) {
       return res.json({ ok: true, queued: 0 });
@@ -40,9 +40,7 @@ router.post('/run', async (req, res) => {
       
       if (visionData) {
         try {
-          memoryStorage.storeProductVisionData(
-            user_id,
-            response_date,
+          await supabaseService.storeProductVisionData(
             image.product_id,
             image.image_url,
             visionData
@@ -80,7 +78,7 @@ router.post('/process', async (req, res) => {
       if (!product.product_id || !product.image_url) continue;
       
       // Check if already processed
-      const existing = memoryStorage.checkVisionDataExists(user_id, response_date, product.product_id);
+      const existing = await supabaseService.checkVisionDataExists(product.product_id, product.image_url);
       
       if (!existing) {
         unprocessedProducts.push(product);
@@ -107,9 +105,7 @@ router.post('/process', async (req, res) => {
       
       if (visionData) {
         try {
-          memoryStorage.storeProductVisionData(
-            user_id,
-            response_date,
+          await supabaseService.storeProductVisionData(
             product.product_id,
             product.image_url,
             {
