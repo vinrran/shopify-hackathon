@@ -22,23 +22,28 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
-// CORS configuration - allow both development ports
+// CORS configuration - allow both development and production origins
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       'http://localhost:5173',  // Vite default
       'http://localhost:8082',  // Shop Mini simulator
       'http://127.0.0.1:5173',
-      'http://127.0.0.1:8082'
+      'http://127.0.0.1:8082',
+      // Add your frontend domains here
+      'https://your-frontend-domain.com',
+      'https://shopify-hackathon-production.up.railway.app'
     ];
     
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    // Allow all origins in development, or if origin is in allowed list
+    if (process.env.NODE_ENV === 'development' || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // For production, be more permissive for now
+      callback(null, true);
     }
   },
   credentials: true
