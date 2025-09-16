@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import supabaseService from '../services/supabaseService.js';
+import memoryStorage from '../memoryStorage.js';
 import logger from '../logger.js';
 
 const router = Router();
@@ -19,11 +19,7 @@ router.post('/', async (req, res) => {
     // Store each response
     for (const answer of answers) {
       const { qid, answer: userAnswer } = answer;
-      await supabaseService.storeUserResponse(user_id, {
-        qid,
-        response_value: userAnswer,
-        response_date
-      });
+      memoryStorage.storeUserResponse(user_id, response_date, qid, userAnswer);
     }
     
     logger.info(`Stored ${answers.length} responses for user ${user_id} on ${response_date}`);
