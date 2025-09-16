@@ -90,13 +90,13 @@ app.use((req, res) => {
 // Initialize and start server
 async function startServer() {
   try {
-    // Start server (no database initialization needed - using in-memory storage)
+    // Start server with Supabase integration
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`Auth enabled: ${process.env.AUTH_ENABLED !== 'false'}`);
       logger.info(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-      logger.info('Using in-memory storage (no database required)');
+      logger.info('Using Supabase database');
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
