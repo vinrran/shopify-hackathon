@@ -247,7 +247,7 @@ function SearchStep({
   onDone: (products: any[]) => void
   onError: (err: unknown) => void
 }) {
-  const { products, loading, error, hasNextPage, fetchMore } = useProductSearch({ query, first: 3 })
+  const { products, loading, error, hasNextPage, fetchMore } = useProductSearch({ query, first: 10 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)
@@ -302,7 +302,7 @@ function RecommendedStep({
   onDone: (products: any[]) => void
   onError: (err: unknown) => void
 }) {
-  const { products, loading, error, hasNextPage, fetchMore } = useRecommendedProducts({ first: 6 })
+  const { products, loading, error, hasNextPage, fetchMore } = useRecommendedProducts({ first: 10 })
 
   const [collected, setCollected] = useState<any[]>([])
   const [pagesFetched, setPagesFetched] = useState(0)

@@ -26,6 +26,7 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   const [topSpots, setTopSpots] = useState<any[]>([])
   const [usedProductIds, setUsedProductIds] = useState<Set<string>>(new Set())
   const [shuffleCount, setShuffleCount] = useState(0)
+  const [productOffset, setProductOffset] = useState(0) // Track which set of products to show
   const [showShareScreen, setShowShareScreen] = useState(false)
   const [touchMoved, setTouchMoved] = useState(false) // track if finger moved enough to count as swipe
 
@@ -45,8 +46,22 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
 
   const getDisplayProducts = () => {
     const available = products.filter(p => !usedProductIds.has(p.id || p.product_id))
+    console.log(`CardFanCarousel: Total products: ${products.length}, Available: ${available.length}, Used: ${usedProductIds.size}`)
     const shuffled = [...available].sort(() => ((Math.sin(shuffleCount * 9999) * 10000) % 1) - 0.5)
-    return shuffled.slice(0, 5)
+    
+    // Cycle through different sets of products based on offset
+    const PRODUCTS_PER_SET = 5 // Show 5 products at a time
+    const startIndex = (productOffset * PRODUCTS_PER_SET) % shuffled.length
+    const endIndex = startIndex + PRODUCTS_PER_SET
+    
+    if (endIndex <= shuffled.length) {
+      return shuffled.slice(startIndex, endIndex)
+    } else {
+      // Wrap around if we're at the end
+      const firstPart = shuffled.slice(startIndex)
+      const secondPart = shuffled.slice(0, PRODUCTS_PER_SET - firstPart.length)
+      return [...firstPart, ...secondPart]
+    }
   }
   const displayProducts = getDisplayProducts()
 
@@ -113,7 +128,15 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
     return position === 0 ? 1 : Math.max(0.2, 1 - position * 0.3)
   }
 
-  const handleShuffle = () => { setShuffleCount(c => c + 1); setCurrentIndex(2) }
+  const handleShuffle = () => { 
+    setShuffleCount(c => c + 1)
+    setProductOffset(prev => {
+      const newOffset = prev + 1
+      console.log(`Shuffling to product set ${newOffset}`)
+      return newOffset
+    })
+    setCurrentIndex(2) 
+  }
 
   return (
     <div className="w-full max-w-lg mx-auto px-1 py-2 overflow-visible">

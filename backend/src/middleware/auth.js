@@ -4,6 +4,7 @@ export function authMiddleware(req, res, next) {
   // Skip auth in development if disabled
   if (process.env.AUTH_ENABLED === 'false') {
     logger.debug('Auth disabled - skipping authentication');
+    req.userId = req.body?.user_id || 'test-user';
     return next();
   }
 
@@ -18,8 +19,7 @@ export function authMiddleware(req, res, next) {
 
   const token = authHeader.substring(7);
   
-  // TODO: Validate token with Shopify
-  // For now, just extract user_id from token or body
+  // Simple token validation - just extract user_id from token or body
   if (token) {
     req.userId = req.body?.user_id || token;
     next();

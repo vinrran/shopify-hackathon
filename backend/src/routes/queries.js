@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDb } from '../database.js';
+import memoryStorage from '../memoryStorage.js';
 import { generateSearchQueries } from '../services/falService.js';
 import logger from '../logger.js';
 
@@ -17,16 +17,8 @@ router.post('/generate', async (req, res) => {
       });
     }
     
-    const db = getDb();
-    
     // Fetch today's responses
-    const responses = await db.all(
-      `SELECT ur.*, q.prompt, q.type, q.options_json
-       FROM user_responses ur
-       JOIN questions q ON ur.qid = q.id
-       WHERE ur.user_id = ? AND ur.response_date = ?`,
-      [user_id, response_date]
-    );
+    const responses = memoryStorage.getUserResponses(user_id, response_date);
     
     if (responses.length === 0) {
       return res.status(400).json({ 
@@ -49,14 +41,9 @@ router.post('/generate', async (req, res) => {
       genderAffinity: gender_affinity
     });
     
-    // Store queries in database
+    // Store queries in memory
     for (const query of queries) {
-      await db.run(
-        `INSERT INTO search_queries 
-         (user_id, response_date, query, source) 
-         VALUES (?, ?, ?, ?)`,
-        [user_id, response_date, query, 'llm']
-      );
+      memoryStorage.storeSearchQuery(user_id, response_date, query, 'llm');
     }
     
     logger.info(`Generated ${queries.length} search queries for user ${user_id}`);

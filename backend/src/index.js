@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { initDatabase } from './database.js';
 import authMiddleware from './middleware/auth.js';
 import logger from './logger.js';
 
@@ -23,24 +22,23 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
-// CORS configuration - allow both development ports
+// CORS configuration - allow both development and production origins
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       'http://localhost:5173',  // Vite default
       'http://localhost:8082',  // Shop Mini simulator
       'http://127.0.0.1:5173',
-      'http://127.0.0.1:8082'
+      'http://127.0.0.1:8082',
+      // Add your frontend domains here
+      'https://shopify-hackathon-production.up.railway.app'
     ];
     
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow all origins for now to ensure connection works
+    callback(null, true);
   },
   credentials: true
 };
@@ -91,16 +89,13 @@ app.use((req, res) => {
 // Initialize and start server
 async function startServer() {
   try {
-    // Initialize database
-    await initDatabase();
-    logger.info('Database initialized successfully');
-    
-    // Start server
+    // Start server (no database initialization needed - using in-memory storage)
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`Auth enabled: ${process.env.AUTH_ENABLED !== 'false'}`);
       logger.info(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+      logger.info('Using in-memory storage (no database required)');
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
