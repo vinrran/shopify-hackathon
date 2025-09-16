@@ -31,20 +31,14 @@ const corsOptions = {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:8082',
       // Add your frontend domains here
-      'https://your-frontend-domain.com',
       'https://shopify-hackathon-production.up.railway.app'
     ];
     
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    // Allow all origins in development, or if origin is in allowed list
-    if (process.env.NODE_ENV === 'development' || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // For production, be more permissive for now
-      callback(null, true);
-    }
+    // Allow all origins for now to ensure connection works
+    callback(null, true);
   },
   credentials: true
 };
