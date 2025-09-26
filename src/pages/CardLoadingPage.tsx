@@ -18,12 +18,12 @@ export function LoadingScreen({
   //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png'
   //]
   const tarotImages = [
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg",
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
-    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg"
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901911/sun_rtdf2h.png",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901915/star_zrazzv.png",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901919/moon_xdylgn.png",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901911/sun_rtdf2h.png",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901915/star_zrazzv.png",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901919/moon_xdylgn.png"
   ]
   const animationDelays = ['0.7s', '0.6s', '0.5s', '0.4s', '0.3s', '0.2s']
 

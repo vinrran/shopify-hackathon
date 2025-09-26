@@ -33,13 +33,15 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
       {images.map((src, i) => (
         <div
           key={`${direction}-${i}`}
-          className="relative h-60 sm:h-44 md:h-48 flex items-center justify-center overflow-hidden rounded-xl"
+          className="relative flex items-center justify-center overflow-hidden rounded-xl"
+          style={{ width: '170px', height: '200px' }}
         >
           <img
             src={src}
             alt={`Loading state ${i + 1}`}
             loading="lazy"
-            className="select-none h-full w-auto object-contain"
+            className="select-none object-contain"
+            style={{ width: '100%', height: '100%' }}
             draggable={false}
           />
         </div>
