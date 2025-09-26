@@ -40,7 +40,7 @@ export function FanCarouselPage() {
 
       <div className="flex-1 w-full flex flex-col items-center justify-start">
         {loading ? (
-          <LoadingScreen />
+          <div></div>
         ) : error ? (
           <div className="text-sm text-red-600">Failed to load products.</div>
         ) : (
