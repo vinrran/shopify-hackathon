@@ -28,20 +28,17 @@ router.post('/build', async (req, res) => {
     }
 
     
-    // Get products with vision data
-    const products = memoryStorage.getProductsWithVisionData(user_id, response_date);
+    // Get all products (no vision data needed)
+    const products = memoryStorage.getProducts(user_id, response_date);
     
-    // Format products for ranking
+    // Format products for ranking (simple format without vision data)
     const formattedProducts = products.map(p => ({
       product_id: p.product_id,
       title: p.title,
       vendor: p.vendor,
       price: p.price,
       currency: p.currency,
-      url: p.url,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
+      url: p.url
     }));
     
 
@@ -151,15 +148,14 @@ router.post('/replenish', async (req, res) => {
     
     const todayQueries = memoryStorage.getSearchQueries(user_id, response_date);
     
-    // Format products
+    // Format products (simple format without vision data)
     const formattedProducts = products.map(p => ({
       product_id: p.product_id,
       title: p.title,
       vendor: p.vendor,
       price: p.price,
-      tags: p.tags_json ? JSON.parse(p.tags_json) : [],
-      caption: p.caption,
-      attributes: p.attributes_json ? JSON.parse(p.attributes_json) : {}
+      currency: p.currency,
+      url: p.url
     }));
     
     // Get all products without LLM ranking
