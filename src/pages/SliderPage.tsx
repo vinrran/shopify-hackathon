@@ -53,15 +53,6 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
       const id = p?.product_id || p?.id; if (!id || seen.has(id)) return false; seen.add(id); return true
     })
   }
-  
-  const shuffleArray = <T>(array: T[]): T[] => {
-    const shuffled = [...array]
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-    }
-    return shuffled
-  }
   const toMapById = (list: Product[]) => {
     const m = new Map<string, Product>(); list.forEach(p => { const id = (p as any)?.product_id || (p as any)?.id; if (id) m.set(id, p) }); return m
   }
@@ -127,19 +118,14 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
     const returnSimpleResults = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
-        // Deduplicate products by ID and randomize order
-        const uniqueProducts = dedupeById(accumulated)
-        const shuffledProducts = shuffleArray(uniqueProducts)
-        
-        // Convert to ranked format (without actual ranking)
-        const hydrated: RankedProduct[] = shuffledProducts.map((product, index) => ({
+        // Convert accumulated products to ranked format (without actual ranking)
+        const hydrated: RankedProduct[] = accumulated.map((product, index) => ({
           ...product,
           rank: index + 1,
           score: 1.0, // All products get same score
           reason: 'Search result' // Simple reason
         }))
 
-        console.log(`Processed ${accumulated.length} products → ${uniqueProducts.length} unique → shuffled and ranked`)
         dispatch({ type: 'SET_RANKED', payload: hydrated })
         dispatch({ type: 'SET_HAS_MORE', payload: false }) // No more results since we're showing all
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
