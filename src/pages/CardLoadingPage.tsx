@@ -38,7 +38,7 @@ export function LoadingScreen({
               animationDelay: animationDelays[index],
             }}
           >
-            <div className="relative h-[160px] w-[120px] bg-white rounded-[15%] border border-orange-300 shadow-[0_4px_10px_rgba(0,0,0,0.15)] overflow-hidden">
+            <div className="relative h-[170px] w-[130px] rounded-[15%] overflow-hidden">
               <img
                 src={imageUrl}
                 alt={`Tarot Card ${index + 1}`}

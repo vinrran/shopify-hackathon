@@ -34,7 +34,7 @@ export const LoadingImagesSlider: React.FC<LoadingImagesSliderProps> = ({
         <div
           key={`${direction}-${i}`}
           className="relative flex items-center justify-center overflow-hidden rounded-xl"
-          style={{ width: '170px', height: '200px' }}
+          style={{ width: '150px', height: '200px' }}
         >
           <img
             src={src}
