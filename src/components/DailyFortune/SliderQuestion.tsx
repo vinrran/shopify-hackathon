@@ -20,7 +20,7 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
 
   /* ---------------------- Arch (Arc) Slider internals ---------------------- */
   // visual
-  const radius = 135 // px
+  const radius = 140 // px
   const strokeWidth = 14
   const startAngle = Math.PI // 180° (left)
   const endAngle = 0         // 0° (right)
@@ -47,11 +47,6 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
   const currentAngle = startAngle - valueFraction * sweepAngle
   const thumbX = radius + radius * Math.cos(currentAngle)
   const thumbY = radius + radius * Math.sin(currentAngle)
-  
-  // Mirror thumb position (flip across the horizontal center line)
-  const mirrorThumbX = thumbX
-  const mirrorThumbY = radius - (thumbY - radius) // Mirror across y = radius line
-  
   const progressLength = pathLength * valueFraction
 
   const svgRef = useRef<SVGSVGElement | null>(null)
@@ -118,19 +113,19 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
     <div className="space-y-8 px-4 df-range -mx-4">
       <div className="text-center space-y-3 pt-4">
         <div className="bg-black/30 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-xl h-[25vh] min-h-[160px] max-h-[220px] flex flex-col justify-center overflow-hidden">
-          <h2 className="white-title">{question.title}</h2>
-          {question.subtitle && <p className={`text-white/95 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2 font-medium`} style={{fontFamily: "'Castoro Titling', serif"}}>{question.subtitle}</p>}
+          <h2 className={`${getDynamicTitleSize(question.title)} font-bold text-white drop-shadow-lg leading-tight tracking-wide`}>{question.title}</h2>
+          {question.subtitle && <p className={`text-white/95 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2 font-medium`}>{question.subtitle}</p>}
         </div>
       </div>
 
       <div className="space-y-6 mt-2">
         <div className="flex justify-between px-4">
-          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg" style={{fontFamily: "'Castoro Titling', serif"}}>{question.leftLabel}</span>
-          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg" style={{fontFamily: "'Castoro Titling', serif"}}>{question.rightLabel}</span>
+          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg">{question.leftLabel}</span>
+          <span className="text-xl font-bold text-white bg-black/40 px-3 py-2 rounded-full border border-white/20 backdrop-blur-sm drop-shadow-lg">{question.rightLabel}</span>
         </div>
 
         {/* === Arch Slider (replaces straight horizontal slider) === */}
-        <div className="w-full max-w-md mx-auto px-4 mt-15">
+        <div className="w-full max-w-md mx-auto px-4 mt-19">
           <div className="w-full flex items-center justify-center select-none">
             <div className="relative" style={{ width: svgWidth, height: svgHeight }}>
               <svg
@@ -178,13 +173,8 @@ export function SliderQuestionComponent({ question, value = question.defaultValu
                 >
                   {currentValue}
                 </text>
-                {/* Original Thumb (smaller) */}
+                {/* Thumb */}
                 <g transform={`translate(${thumbX},${thumbY})`}>
-                  <circle r={strokeWidth * 0.9 -5} fill="#ffcd61" />
-                  <circle r={strokeWidth * 0.5 - 2} fill="white" />
-                </g>
-                {/* Mirrored Thumb */}
-                <g transform={`translate(${mirrorThumbX},${mirrorThumbY})`}>
                   <circle r={strokeWidth * 0.9} fill="#ffcd61" />
                   <circle r={strokeWidth * 0.5} fill="white" />
                 </g>
