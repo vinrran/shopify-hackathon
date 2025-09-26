@@ -20,8 +20,8 @@ export function SingleChoiceQuestionComponent({ question, value, onChange }: Sin
     <div className="space-y-8 px-4">
       <div className="text-center space-y-3">
         <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-lg h-[25vh] min-h-[160px] max-h-[220px] flex flex-col justify-center overflow-hidden">
-          <h2 className={`${getDynamicTitleSize(question.title)} font-bold text-white drop-shadow-lg leading-tight`}>{question.title}</h2>
-          {question.subtitle && <p className={`text-white/90 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2`}>{question.subtitle}</p>}
+          <h2 className="white-title">{question.title}</h2>
+          {question.subtitle && <p className={`text-white/90 ${getDynamicSubtitleSize(question.subtitle)} drop-shadow-md mt-2`} style={{fontFamily: "'Castoro Titling', serif"}}>{question.subtitle}</p>}
         </div>
       </div>
 
