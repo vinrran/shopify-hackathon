@@ -127,19 +127,14 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
     const returnSimpleResults = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
-        // Deduplicate products by ID and randomize order
-        const uniqueProducts = dedupeById(accumulated)
-        const shuffledProducts = shuffleArray(uniqueProducts)
-        
-        // Convert to ranked format (without actual ranking)
-        const hydrated: RankedProduct[] = shuffledProducts.map((product, index) => ({
+        // Convert accumulated products to ranked format (without actual ranking)
+        const hydrated: RankedProduct[] = accumulated.map((product, index) => ({
           ...product,
           rank: index + 1,
           score: 1.0, // All products get same score
           reason: 'Search result' // Simple reason
         }))
 
-        console.log(`Processed ${accumulated.length} products → ${uniqueProducts.length} unique → shuffled and ranked`)
         dispatch({ type: 'SET_RANKED', payload: hydrated })
         dispatch({ type: 'SET_HAS_MORE', payload: false }) // No more results since we're showing all
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
@@ -158,13 +153,20 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
   }, [phase])
 
   // ------- Slider UI while everything runs in the background -------
+  //const loadingImages = [
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
+  //]
   const loadingImages = [
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg"
   ]
-
   return (
     <div
 

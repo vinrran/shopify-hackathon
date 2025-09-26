@@ -62,11 +62,11 @@ export const InfiniteSlider: React.FC<InfiniteSliderProps> = ({
           columnGap: gap, // for future-proof even though we set marginRight below
         }}
       >
-    {duplicated.map((child, idx) => (
+        {duplicated.map((child, idx) => (
           <div
-            className={["infinite-slider__item", itemClassName].filter(Boolean).join(' ')}
-      style={{marginRight: gap}}
             key={idx}
+            className={["infinite-slider__item", itemClassName].filter(Boolean).join(' ')}
+            style={{marginRight: gap}}
           >
             {child}
           </div>
