@@ -158,13 +158,20 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
   }, [phase])
 
   // ------- Slider UI while everything runs in the background -------
+  //const loadingImages = [
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
+  //  'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
+  //]
   const loadingImages = [
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
-    'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851855/sun_vaknng.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851862/star_efmrck.svg",
+    "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758851867/moon_iqfsux.svg"
   ]
-
   return (
     <div
 

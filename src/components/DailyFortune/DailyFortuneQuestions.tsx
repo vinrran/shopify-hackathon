@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import bg from '../sliderbg2.svg'
+import bg from '../../components/background.svg'
+import bg2 from '../sliderbg2.svg'
 import { QUESTIONS } from "./question-data"
 import type { QuestionAnswer, Question } from "./question-types"
 import { SliderQuestionComponent } from "./SliderQuestion"
@@ -132,7 +133,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
     <div
       className="min-h-screen overflow-x-hidden"
       style={{
-        backgroundImage: `url(${bg})`,
+        backgroundImage: `url(${currentQuestion.type === 'slider' ? bg2 : bg})`,
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
