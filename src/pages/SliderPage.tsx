@@ -111,38 +111,27 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
     }
   }
 
-  // Trigger ranking exactly once when we enter phase='ranking'
+  // Simply return accumulated products without AI processing
   useEffect(() => {
     if (phase !== 'ranking') return
 
-    const buildAndFetchRanking = async () => {
+    const returnSimpleResults = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
-        await api.processProductVision(state.userId, state.today, accumulated)
-
-        await api.buildRanking(state.userId, state.today)
-        dispatch({ type: 'SET_LOADING', payload: { key: 'fetchRanking', value: true } })
-        const ranking = await api.getRanking(state.userId, state.today, 50, 0)
-
-        const cache = toMapById(accumulated)
-        const hydrated: RankedProduct[] = (ranking.top || []).map((r: any, i: number) => {
-          const full = cache.get(r.product_id)
-          const base: Product = full ? full : {
-            product_id: r.product_id,
-            title: '',
-            vendor: 'Unknown',
-            price: '0',
-            currency: 'USD'
-          }
-          return { ...base, rank: r.rank ?? i + 1, score: r.score, reason: r.reason }
-        })
+        // Convert accumulated products to ranked format (without actual ranking)
+        const hydrated: RankedProduct[] = accumulated.map((product, index) => ({
+          ...product,
+          rank: index + 1,
+          score: 1.0, // All products get same score
+          reason: 'Search result' // Simple reason
+        }))
 
         dispatch({ type: 'SET_RANKED', payload: hydrated })
-        dispatch({ type: 'SET_HAS_MORE', payload: !!ranking.has_more })
+        dispatch({ type: 'SET_HAS_MORE', payload: false }) // No more results since we're showing all
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
       } catch (err) {
-        console.error('buildAndFetchRanking error:', err)
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to build recommendations. Please try again.' })
+        console.error('returnSimpleResults error:', err)
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to load products. Please try again.' })
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
       } finally {
         dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: false } })
@@ -150,7 +139,7 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
       }
     }
 
-    buildAndFetchRanking()
+    returnSimpleResults()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
