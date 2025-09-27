@@ -127,14 +127,19 @@ export function SliderPage({ surroundGap = 30 }: SliderPageProps) {
     const returnSimpleResults = async () => {
       dispatch({ type: 'SET_LOADING', payload: { key: 'buildRanking', value: true } })
       try {
-        // Convert accumulated products to ranked format (without actual ranking)
-        const hydrated: RankedProduct[] = accumulated.map((product, index) => ({
+        // Deduplicate products by ID and randomize order
+        const uniqueProducts = dedupeById(accumulated)
+        const shuffledProducts = shuffleArray(uniqueProducts)
+        
+        // Convert to ranked format (without actual ranking)
+        const hydrated: RankedProduct[] = shuffledProducts.map((product, index) => ({
           ...product,
           rank: index + 1,
           score: 1.0, // All products get same score
           reason: 'Search result' // Simple reason
         }))
 
+        console.log(`Processed ${accumulated.length} products → ${uniqueProducts.length} unique → shuffled and ranked`)
         dispatch({ type: 'SET_RANKED', payload: hydrated })
         dispatch({ type: 'SET_HAS_MORE', payload: false }) // No more results since we're showing all
         dispatch({ type: 'SET_SCREEN', payload: 'card' })
