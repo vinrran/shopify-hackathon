@@ -19,9 +19,11 @@ export function QuizPage() {
         setSubmitting(true)
         try {
           // Store the original DailyFortune answers for sharing
-          // Convert from the enriched format back to QuestionAnswer format
-          const dailyFortuneAnswers = ans.map((a, idx) => ({
-            questionId: `question-${idx + 1}`, // Generate a unique ID since we don't know the actual question IDs
+          console.log('Quiz answers received:', ans)
+          
+          // Now ans contains questionId, question, and value
+          const dailyFortuneAnswers = ans.map(a => ({
+            questionId: a.questionId,
             value: a.value
           }))
           dispatch({ type: 'SET_DAILY_FORTUNE_ANSWERS', payload: dailyFortuneAnswers })

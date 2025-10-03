@@ -67,7 +67,7 @@ export function DailyFortuneQuestions({ questions, onComplete }: DailyFortuneQue
     } else {
       const enriched = answers.map(a => {
         const q = localQuestions.find(q => q.id === a.questionId)
-        return { question: q?.title || '', value: a.value }
+        return { question: q?.title || '', value: a.value, questionId: a.questionId }
       })
       if (onComplete) {
         onComplete(enriched)
