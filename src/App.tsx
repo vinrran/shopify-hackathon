@@ -1,8 +1,7 @@
 
 import { Routes, Route } from 'react-router'
 import { useEffect, useState } from 'react'
-import { SliderPage } from './pages'
-import { QuizPage } from './pages/QuizPage'
+import { SliderPage, SharePage } from './pages'
 import { LandingPage } from './pages/LandingPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { FanCarouselPage } from './pages/FanCarouselPage'
@@ -56,6 +55,7 @@ export function App() {
           <Route path="/fan" element={<FanCarouselPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/card-loading" element={<CardLoadingPage />} />
+          <Route path="/share" element={<SharePage />} />
           <Route
             path="/quiz"
             element={
