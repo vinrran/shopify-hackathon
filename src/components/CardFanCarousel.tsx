@@ -203,8 +203,8 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
         <button
           onClick={() => setShowShareScreen(true)}
           className="bg-gradient-to-b from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-16 h-16 rounded-full border border-purple-300/30 shadow-xl transition-all duration-300 hover:shadow-purple-200/20 hover:border-purple-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center"
-          title="Share your fortune"
-          aria-label="Share fortune"
+          title="Share product recommendations"
+          aria-label="Share recommendations"
           type="button"
         >
           📤

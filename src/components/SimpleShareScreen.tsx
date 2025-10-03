@@ -185,7 +185,7 @@ export function SimpleShareScreen({ answers, selectedProducts, onClose }: Simple
       ctx.fillStyle = '#FFD700'
       ctx.font = 'bold 18px Arial'
       ctx.textAlign = 'center'
-      ctx.fillText('⭐ My Curated Products', boxX + boxWidth/2, bottomHalfY + 25)
+      ctx.fillText('⭐ Recommended Products', boxX + boxWidth/2, bottomHalfY + 25)
 
       // Staggered products layout
       const products = displayProducts.slice(0, 3)
@@ -245,54 +245,31 @@ export function SimpleShareScreen({ answers, selectedProducts, onClose }: Simple
   }
 
   const handleShopifyShare = async () => {
-    const shareText = `✨ Check out my Daily Shopping Fortune! ✨
+    // Create a product-focused share message
+    const productShareText = `✨ Discover these amazing products recommended for me! ✨
 
-My Vibe Today:
-${answers.map(answer => {
+${displayProducts.map((product: any, index: number) => {
+  const price = product.price || product.variants?.[0]?.price?.amount || 'Price not available'
+  const currency = product.currency || product.variants?.[0]?.price?.currencyCode || 'USD'
+  return `${index + 1}. ${product.title} - ${price} ${currency}`
+}).join('\n')}
+
+Based on my preferences:
+${answers.slice(0, 2).map(answer => {
   const question = QUESTIONS.find(q => q.id === answer.questionId)
   if (!question) return ''
-  return `${question.title}: ${getAnswerDisplay(question, answer)}`
+  return `• ${question.title}: ${getAnswerDisplay(question, answer)}`
 }).filter(Boolean).join('\n')}
 
-My Curated Fortune:
-${displayProducts.map((product: any, index: number) => `${index + 1}. ${product.title}`).join('\n')}
-
-Join me on Shop and discover your perfect products! 🛍️`
+Find your perfect products on Shop! 🛍️`
 
     try {
       // Generate share image first
       const imageBlob = await generateShareImage()
       
-      // Use native Web Share API if available (iOS will show native share sheet)
-      if (navigator.share) {
-        const shareData: any = {
-          title: 'My Daily Shopping Fortune ✨',
-          text: shareText,
-          url: 'https://shop.app/diviners'
-        }
-
-        // Add image if supported
-        if (imageBlob && navigator.canShare) {
-          const imageFile = new File([imageBlob], 'my-diviners-fortune.png', { type: 'image/png' })
-          
-          // Test if we can share files
-          if (navigator.canShare({ files: [imageFile] })) {
-            shareData.files = [imageFile]
-            console.log('Native share with image')
-          } else {
-            console.log('Native share without image (files not supported)')
-          }
-        }
-
-        await navigator.share(shareData)
-        console.log('Native share completed')
-        onClose()
-        return
-      }
-
-      // Fallback: Use Shopify's share hook
+      // Use Shopify's share hook to share products directly
       const result = await share({
-        title: 'My Daily Shopping Fortune ✨',
+        title: 'My Personalized Product Recommendations ✨',
         url: 'https://shop.app/diviners'
       })
       
@@ -300,33 +277,41 @@ Join me on Shop and discover your perfect products! 🛍️`
       
       if (result) {
         onClose()
+        return
       }
-    } catch (error) {
-      console.error('Error sharing:', error)
-      
-      // Final fallback: clipboard + download
+
+      // Fallback: Copy product links to clipboard
       try {
-        await navigator.clipboard.writeText(`${shareText}\n\nVisit: https://shop.app/diviners`)
+        const productLinks = displayProducts.map((product: any, index: number) => {
+          const productUrl = product.url || `https://shop.app/products/${product.handle || product.id}`
+          return `${index + 1}. ${product.title}: ${productUrl}`
+        }).join('\n\n')
+        
+        const fullShareText = `${productShareText}\n\nProduct Links:\n${productLinks}\n\nVisit: https://shop.app/diviners`
+        
+        await navigator.clipboard.writeText(fullShareText)
         
         // Download the image
-        const imageBlob = await generateShareImage()
         if (imageBlob) {
           const url = URL.createObjectURL(imageBlob)
           const link = document.createElement('a')
           link.href = url
-          link.download = 'my-diviners-fortune.png'
+          link.download = 'my-product-recommendations.png'
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
           URL.revokeObjectURL(url)
         }
         
-        alert('Content copied to clipboard and image downloaded!')
+        alert('Product recommendations copied to clipboard and image downloaded!')
         onClose()
       } catch (fallbackError) {
         console.error('Fallback error:', fallbackError)
         alert('Unable to share. Please try again.')
       }
+    } catch (error) {
+      console.error('Error sharing:', error)
+      alert('Unable to share. Please try again.')
     }
   }
 
@@ -335,7 +320,7 @@ Join me on Shop and discover your perfect products! 🛍️`
       <div className="bg-gradient-to-br from-[#1A0051] to-[#3A00B7] rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-[#1A0051] to-[#3A00B7] rounded-t-2xl border-b border-purple-300/20 p-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">My Shopping Fortune ✨</h2>
+          <h2 className="text-xl font-bold text-white">Share My Recommendations ✨</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
@@ -387,7 +372,7 @@ Join me on Shop and discover your perfect products! 🛍️`
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <span className="text-yellow-300">⭐</span>
-              My Curated Products
+              Recommended Products
             </h3>
             
             {displayProducts.length === 0 ? (
@@ -412,10 +397,10 @@ Join me on Shop and discover your perfect products! 🛍️`
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center space-y-3 border border-white/20">
             <div className="text-2xl">🛍️</div>
             <h3 className="text-lg font-semibold text-white">
-              Ready to share your fortune?
+              Ready to share these recommendations?
             </h3>
             <p className="text-sm text-white/80">
-              Let your friends discover their perfect products with personalized shopping experiences on Shop
+              Share these personalized product recommendations with your friends and help them discover amazing products on Shop
             </p>
           </div>
 
@@ -429,7 +414,7 @@ Join me on Shop and discover your perfect products! 🛍️`
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
-                Share My Fortune
+                Share Recommendations
               </div>
             </button>
           </div>
