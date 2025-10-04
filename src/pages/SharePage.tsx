@@ -17,6 +17,7 @@ export function SharePage() {
   const [state, setState] = useState<SharePageState | null>(null)
   const [imageBlob, setImageBlob] = useState<Blob | null>(null)
   const [isGenerating, setIsGenerating] = useState(true)
+  const [hasFailed, setHasFailed] = useState(false)
 
   useEffect(() => {
     console.log('Location state:', location.state)
@@ -253,7 +254,10 @@ export function SharePage() {
         const textX = imageUrl ? padding + 75 : padding + 20
         const textWidth = contentWidth - (imageUrl ? 95 : 40)
         const titleY = productY + 23
-        wrapText(product.title || 'Product', textX, titleY, textWidth, 16)
+        const productTitle = (product.title || 'Product').length > 28 
+          ? (product.title || 'Product').substring(0, 29) + '...'
+          : (product.title || 'Product')
+        wrapText(productTitle, textX, titleY, textWidth, 16)
         
         ctx.fillStyle = '#FFD700'
         ctx.font = 'bold 12px Arial'
@@ -276,16 +280,21 @@ export function SharePage() {
   useEffect(() => {
     if (state) {
       console.log('Starting image generation with state:', state)
+      setHasFailed(false)
       generateShareImage()
         .then(blob => {
           console.log('Image generation successful:', blob ? 'Blob created' : 'No blob')
           setImageBlob(blob)
           setIsGenerating(false)
+          if (!blob) {
+            setHasFailed(true)
+          }
         })
         .catch(error => {
           console.error('Image generation failed:', error)
           setImageBlob(null)
           setIsGenerating(false)
+          setHasFailed(true)
         })
     } else {
       console.log('No state available for image generation')
@@ -416,16 +425,8 @@ Find your perfect products on Shop! 🛍️`
             </button>
           </div>
 
-          <button
-            onClick={() => navigate('/')}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors z-10 backdrop-blur-sm"
-          >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
-      ) : (
+      ) : hasFailed ? (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1A0051] to-[#3A00B7] p-4">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 text-center space-y-4">
             <div className="text-white/70">
@@ -434,15 +435,20 @@ Find your perfect products on Shop! 🛍️`
             <button
               onClick={() => {
                 setIsGenerating(true)
+                setHasFailed(false)
                 generateShareImage()
                   .then(blob => {
                     setImageBlob(blob)
                     setIsGenerating(false)
+                    if (!blob) {
+                      setHasFailed(true)
+                    }
                   })
                   .catch(error => {
                     console.error('Retry failed:', error)
                     setImageBlob(null)
                     setIsGenerating(false)
+                    setHasFailed(true)
                   })
               }}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
@@ -450,6 +456,10 @@ Find your perfect products on Shop! 🛍️`
               Retry
             </button>
           </div>
+        </div>
+      ) : (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#1A0051] to-[#3A00B7]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
         </div>
       )}
     </div>
