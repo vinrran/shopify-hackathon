@@ -1,0 +1,22 @@
+{
+  "name": "shopify-mini-app",
+  "version": "1.0.0",
+  "description": "Shopify Shop Mini with Supabase backend",
+  "private": true,
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm ci --omit=dev",
+    "dev": "cd backend && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@shopify/shop-minis-react": "0.1.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@shopify/shop-minis-cli": "^0.0.190"
+  }
+}
