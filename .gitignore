@@ -2,3 +2,5 @@ node_modules
 .minis-cache
 *.tsbuildinfo
 .env
+package-lock.json
+package.json
