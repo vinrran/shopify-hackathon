@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router'
 import { ProductCard } from '@shopify/shop-minis-react'
-import { SimpleShareScreen } from './SimpleShareScreen'
 import type { QuestionAnswer } from './DailyFortune/question-types'
 
 export interface CardFanCarouselProps {
@@ -10,6 +10,8 @@ export interface CardFanCarouselProps {
 }
 
 export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, loading, answers = [] }) => {
+  const navigate = useNavigate()
+  
   // Create sample answers if none provided (for testing/demo purposes)
   const sampleAnswers: QuestionAnswer[] = [
     { questionId: 'mood-emoji', value: 'sparkles' },
@@ -27,7 +29,6 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
   const [usedProductIds, setUsedProductIds] = useState<Set<string>>(new Set())
   const [shuffleCount, setShuffleCount] = useState(0)
   const [productOffset, setProductOffset] = useState(0) // Track which set of products to show
-  const [showShareScreen, setShowShareScreen] = useState(false)
   const [touchMoved, setTouchMoved] = useState(false) // track if finger moved enough to count as swipe
 
   if (loading || !products || products.length === 0) {
@@ -201,25 +202,21 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
         </button>
         
         <button
-          onClick={() => setShowShareScreen(true)}
+          onClick={() => navigate('/share', { 
+            state: { 
+              answers: displayAnswers, 
+              selectedProducts: topSpots.filter(Boolean).length > 0 ? topSpots.filter(Boolean) : displayProducts.slice(0, 3)
+            }
+          })}
           className="bg-gradient-to-b from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-16 h-16 rounded-full border border-purple-300/30 shadow-xl transition-all duration-300 hover:shadow-purple-200/20 hover:border-purple-300/50 backdrop-blur-sm hover:scale-110 active:scale-95 flex items-center justify-center"
-          title="Share your fortune"
-          aria-label="Share fortune"
+          title="Share product recommendations"
+          aria-label="Share recommendations"
           type="button"
         >
           📤
         </button>
       </div>
       <div className="pb-8" />
-      
-      {/* Share Screen Modal */}
-      {showShareScreen && (
-        <SimpleShareScreen
-          answers={displayAnswers}
-          selectedProducts={topSpots.filter(Boolean).length > 0 ? topSpots.filter(Boolean) : displayProducts.slice(0, 3)}
-          onClose={() => setShowShareScreen(false)}
-        />
-      )}
     </div>
   )
 }

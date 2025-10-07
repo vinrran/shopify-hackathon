@@ -2,5 +2,6 @@
   "name": "divination",
   "permissions": [],
   "privacy_policy_url": "https://example.com/privacy",
-  "terms_url": "https://example.com/terms"
+  "terms_url": "https://example.com/terms",
+  "trusted_domains": ["res.cloudinary.com", "shopify-hackathon-production.up.railway.app/"]
 }

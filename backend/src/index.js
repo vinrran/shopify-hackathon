@@ -31,7 +31,8 @@ const corsOptions = {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:8082',
       // Add your frontend domains here
-      'https://shopify-hackathon-production.up.railway.app'
+      'https://shopify-hackathon-production.up.railway.app',
+      "https://res.cloudinary.com"
     ];
     
     // Allow requests with no origin (like mobile apps or curl)

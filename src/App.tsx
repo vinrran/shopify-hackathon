@@ -1,8 +1,7 @@
 
 import { Routes, Route } from 'react-router'
 import { useEffect, useState } from 'react'
-import { SliderPage } from './pages'
-import { QuizPage } from './pages/QuizPage'
+import { SliderPage, SharePage } from './pages'
 import { LandingPage } from './pages/LandingPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { FanCarouselPage } from './pages/FanCarouselPage'
@@ -26,10 +25,10 @@ export function App() {
   // Preload SliderPage assets (images) on app start to eliminate first-render delay
   useEffect(() => {
     const sliderImages = [
-      'https://res.cloudinary.com/dttko4svl/image/upload/v1754791508/loading1_itvguf.png',
-      'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading2_e84zay.png',
-      'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading3_wxa3dv.png',
-      'https://res.cloudinary.com/dttko4svl/image/upload/v1754791509/loading4_mbcy1n.png',
+      "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901911/sun_rtdf2h.png",
+      "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901915/star_zrazzv.png", 
+      "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901919/moon_xdylgn.png",
+      "https://res.cloudinary.com/dpbxtwdok/image/upload/v1758901915/star_zrazzv.png"
     ]
     const tags: HTMLImageElement[] = []
     for (const src of sliderImages) {
@@ -56,6 +55,7 @@ export function App() {
           <Route path="/fan" element={<FanCarouselPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/card-loading" element={<CardLoadingPage />} />
+          <Route path="/share" element={<SharePage />} />
           <Route
             path="/quiz"
             element={
