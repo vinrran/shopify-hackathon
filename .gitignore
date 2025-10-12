@@ -3,4 +3,3 @@ node_modules
 *.tsbuildinfo
 .env
 package-lock.json
-package.json

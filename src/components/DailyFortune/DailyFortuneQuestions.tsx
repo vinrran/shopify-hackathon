@@ -9,7 +9,7 @@ import { MultipleChoiceQuestionComponent } from "./MultipleChoiceQuestion"
 
 interface DailyFortuneQuestionsProps {
   questions?: Question[]
-  onComplete?: (answers: Array<{ question: string; value: number | string | string[] }>) => void
+  onComplete?: (answers: Array<{ question: string; value: number | string | string[]; questionId: string }>) => void
 }
 
 // Function to randomly select 3 questions from the pool with specific types in order
