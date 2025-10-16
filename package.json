@@ -14,11 +14,12 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@shopify/shop-minis-react": "^0.2.0",
+    "@shopify/shop-minis-react": "0.2.1",
+    "lucide-react": "^0.513.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@shopify/shop-minis-cli": "^0.0.0-snapshot.20251010111619"
+    "@shopify/shop-minis-cli": "0.0.197"
   }
 }

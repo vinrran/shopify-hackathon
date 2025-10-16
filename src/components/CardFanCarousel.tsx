@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { ProductCard } from '@shopify/shop-minis-react'
+import { Shuffle, Share2 } from 'lucide-react'
 import type { QuestionAnswer } from './DailyFortune/question-types'
 
 export interface CardFanCarouselProps {
@@ -197,9 +198,9 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           title="Shuffle the cards to reveal new products"
           aria-label="Shuffle products"
           type="button"
-        >
-          🔮
-        </button>
+         >
+           <Shuffle size={20} />
+         </button>
         
         <button
           onClick={() => navigate('/share', { 
@@ -212,9 +213,9 @@ export const CardFanCarousel: React.FC<CardFanCarouselProps> = ({ products, load
           title="Share product recommendations"
           aria-label="Share recommendations"
           type="button"
-        >
-          📤
-        </button>
+          >
+            <Share2 size={20} />
+          </button>
       </div>
       <div className="pb-8" />
     </div>
